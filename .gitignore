@@ -1,0 +1,44 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+
+# Logs
+logs/
+*.log
+logs/**
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Uploads and runtime
+uploads/
+tmp/
+temp/
+.cache/
+
+# Build / dist
+dist/
+build/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# OneDrive temporary / syncing files
+~$*
+*.tmp
+.~*
+
+# Coverage
+coverage/
+
+# Misc
+*.log

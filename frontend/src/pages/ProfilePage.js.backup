@@ -1,0 +1,1334 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useSearchParams, Link } from 'react-router-dom';
+import { generalAPI, userAPI, matchingAPI } from '../services/api';
+import { useAuth } from '../services/auth';
+import ProfileSettingsForm from '../components/ProfileSettingsForm';
+import { 
+  User, 
+  Heart, 
+  FileText, 
+  History,
+  Settings,
+  Trash2,
+  Calendar,
+  MapPin,
+  Eye,
+  Bookmark,
+  MessageCircle,
+  Target,
+  RefreshCw
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import PostCard from '../components/PostCard';
+import PetCardSkeleton from '../components/PetCardSkeleton';
+import EmptyState from '../components/EmptyState';
+
+const ProfilePage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'profile';
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
+
+    const tabs = [
+    { id: 'profile', label: '個人資料', icon: User },
+    { id: 'favorites', label: '我的收藏', icon: Heart },
+    { id: 'saved-posts', label: '已收藏貼文', icon: Bookmark },
+    { id: 'browsing-history', label: '最近瀏覽', icon: History },
+    { id: 'preferences', label: '領養偏好', icon: Settings },
+    { id: 'matching-profile', label: '配對檔案', icon: Target },
+    { id: 'posts', label: '我的貼文', icon: FileText },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 頁面標題 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">個人中心</h1>
+          <p className="mt-2 text-gray-600">管理您的個人資料與活動記錄</p>
+        </div>
+
+        {/* Tab 導航 */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex items-center px-6 py-4 text-sm font-medium whitespace-nowrap
+                      border-b-2 transition-colors
+                      ${isActive
+                        ? 'border-purple-500 text-purple-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5 mr-2" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Tab 內容 */}
+          <div className="p-6">
+            {activeTab === 'profile' && <ProfileTab />}
+            {activeTab === 'favorites' && <FavoritesTab />}
+            {activeTab === 'saved-posts' && <SavedPostsTab />}
+            {activeTab === 'browsing-history' && <BrowsingHistoryTab />}
+            {activeTab === 'preferences' && <PreferencesTab />}
+            {activeTab === 'matching-profile' && <MatchingProfileTab />}
+            {activeTab === 'posts' && <PostsTab />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Story 1.3: ?汗甇瑕 Tab
+const BrowsingHistoryTab = () => {
+  const queryClient = useQueryClient();
+
+  // ???汗甇瑕
+  const { data: historyData, isLoading } = useQuery(
+    'browsing-history',
+    () => generalAPI.getBrowsingHistory({ limit: 50 }),
+    {
+      select: (response) => response.data,
+    }
+  );
+
+  // 皜?汗甇瑕
+  const clearHistoryMutation = useMutation(
+    () => generalAPI.clearBrowsingHistory(),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('browsing-history');
+        toast.success('已清除瀏覽記錄');
+      },
+      onError: () => {
+        toast.error('清除失敗，請稍後再試');
+      },
+    }
+  );
+
+  const handleClearHistory = () => {
+    if (window.confirm('確定要清除所有瀏覽記錄嗎？此操作無法復原。')) {
+      clearHistoryMutation.mutate();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="flex gap-4 p-4 bg-gray-100 rounded-lg">
+              <div className="w-24 h-24 bg-gray-300 rounded-lg"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-300 rounded w-1/4"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const history = historyData?.history || [];
+  const hasHistory = history.length > 0;
+
+  return (
+    <div>
+      {/* 璅????斗???*/}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">?餈汗</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            ??{history.length} 蝑???
+          </p>
+        </div>
+        {hasHistory && (
+          <button
+            onClick={handleClearHistory}
+            disabled={clearHistoryMutation.isLoading}
+            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            皜甇瑕
+          </button>
+        )}
+      </div>
+
+      {/* ?汗甇瑕?” */}
+      {!hasHistory ? (
+        <div className="text-center py-12">
+          <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 mb-4">???汗閮?</p>
+          <Link
+            to="/pets"
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            ???Ｙ揣撖萇
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {history.map((item, index) => (
+            <motion.div
+              key={item._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Link
+                to={`/pets/${item._id}`}
+                className="flex gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+              >
+                {/* 撖萇?抒? */}
+                <div className="w-24 h-24 flex-shrink-0">
+                  <img
+                    src={item.photos?.[0] || '/placeholder-pet.jpg'}
+                    alt={item.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+
+                {/* 撖萇鞈? */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
+                    {item.name}
+                  </h3>
+                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-2">
+                    <span className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      {item.breed}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {item.age}
+                    </span>
+                    {item.shelterInfo?.name && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {item.shelterInfo.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Eye className="w-3 h-3" />
+                    ?汗??嚗new Date(item.viewedAt).toLocaleString('zh-TW')}
+                  </div>
+                </div>
+
+                {/* ???蝐?*/}
+                <div className="flex-shrink-0">
+                  <span
+                    className={`
+                      inline-block px-3 py-1 rounded-full text-xs font-medium
+                      ${item.adoptionStatus === 'available'
+                        ? 'bg-green-100 text-green-700'
+                        : item.adoptionStatus === 'pending'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                      }
+                    `}
+                  >
+                    {item.adoptionStatus === 'available'
+                      ? '可領養'
+                      : item.adoptionStatus === 'pending'
+                      ? '審核中'
+                      : '已領養'}
+                  </span>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ?犖鞈? Tab
+const ProfileTab = () => {
+  const { user, updateProfile } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    phone: user?.contact_info?.phone || '',
+    address: {
+      city: user?.address?.city || '',
+      district: user?.address?.district || '',
+      street: user?.address?.street || '',
+      zipCode: user?.address?.zipCode || ''
+    }
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await updateProfile(formData);
+    if (result.success) {
+      setIsEditing(false);
+      toast.success('個人資料已更新');
+    }
+  };
+
+  const handleChange = (field, value) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: { ...prev[parent], [child]: value }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">?犖鞈?</h2>
+        {!isEditing && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="btn-secondary"
+          >
+            蝺刻摩鞈?
+          </button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                姓名
+              </label>
+              <input
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                姓氏
+              </label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              聯絡電話
+            </label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              className="input-field"
+              pattern="09\d{8}"
+              placeholder="09xxxxxxxx"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                城市
+              </label>
+              <input
+                type="text"
+                value={formData.address.city}
+                onChange={(e) => handleChange('address.city', e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                區域
+              </label>
+              <input
+                type="text"
+                value={formData.address.district}
+                onChange={(e) => handleChange('address.district', e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              詳細街道地址
+            </label>
+            <input
+              type="text"
+              value={formData.address.street}
+              onChange={(e) => handleChange('address.street', e.target.value)}
+              className="input-field"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              郵遞區號（選填）
+            </label>
+            <input
+              type="text"
+              value={formData.address.postalCode}
+              onChange={(e) => handleChange('address.postalCode', e.target.value)}
+              className="input-field"
+              pattern="\d{3}(\d{2})?"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="btn-primary"
+            >
+              儲存變更
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="btn-secondary"
+            >
+              取消
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="bg-gray-50 rounded-lg p-6 space-y-4 max-w-2xl">
+          <div>
+            <p className="text-sm text-gray-600">使用者名稱</p>
+            <p className="text-lg font-medium text-gray-900">{user?.username}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">電子郵件地址</p>
+            <p className="text-lg font-medium text-gray-900">{user?.email}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">姓名</p>
+            <p className="text-lg font-medium text-gray-900">
+              {user?.firstName} {user?.lastName}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">電話</p>
+            <p className="text-lg font-medium text-gray-900">
+              {user?.contact_info?.phone || '未提供'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">?啣?</p>
+            <p className="text-lg font-medium text-gray-900">
+              {user?.address ? 
+                `${user.address.city}${user.address.district}${user.address.street}` 
+                : '未提供'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">撣唾?憿?</p>
+            <p className="text-lg font-medium text-gray-900">
+              {user?.role === 'user' ? '銝?砌蝙?刻? : 
+               user?.role === 'shelter' ? '?嗅捆?' : '蝞∠???}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">簡介內容</p>
+            <p className="text-lg font-medium text-gray-900">
+              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('zh-TW') : '?芰'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ???嗉? Tab (?嗉??秘??
+const FavoritesTab = () => {
+  const [page, setPage] = useState(1);
+  const [favorites, setFavorites] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      try {
+        setIsLoading(true);
+        // 敺?蝡?API ?脣??嗉??”
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/users/favorites', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('?脣??嗉?憭望?');
+        }
+
+        const data = await response.json();
+        setFavorites(data.data.favorites || []);
+      } catch (error) {
+        console.error('頛?嗉?憭望?:', error);
+        toast.error('頛?嗉?憭望?');
+        setFavorites([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFavorites();
+  }, [refreshKey]); // 瘛餃? refreshKey 雿靘陷
+
+  const handleRemoveFavorite = async (petId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/favorites/${petId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('???嗉?憭望?');
+      }
+
+      setFavorites(prev => prev.filter(pet => pet._id !== petId));
+      toast.success('撌脣??嗉?銝剔宏??);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('???嗉?憭望?:', error);
+      toast.error('載入失敗');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">???嗉?</h2>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <PetCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">???嗉?</h2>
+        <button
+          onClick={() => setRefreshKey(k => k + 1)}
+          className="btn-secondary text-sm flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          ??渡?
+        </button>
+      </div>
+      
+      {favorites.length > 0 ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {favorites.map((pet) => (
+            <motion.div
+              key={pet._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <Link to={`/pets/${pet._id}`} className="block">
+                <div className="relative h-48">
+                  <img
+                    src={
+                      Array.isArray(pet.photos) && pet.photos.length > 0
+                        ? pet.photos[0]
+                        : typeof pet.photos === 'string'
+                        ? pet.photos
+                        : pet.album_file || pet.govData?.album_file || 'https://via.placeholder.com/400x300?text=No+Image'
+                    }
+                    alt={pet.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                    }}
+                  />
+                  <span className={`
+                    absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-medium
+                    ${pet.adoptionStatus === 'available' ? 'bg-green-100 text-green-700' :
+                      pet.adoptionStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'}
+                  `}>
+                    {pet.adoptionStatus === 'available' ? '?航?擗? :
+                     pet.adoptionStatus === 'pending' ? '敺祟?? : '撌脰?擗?}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{pet.name}</h3>
+                  <p className="text-sm text-gray-600 mb-1">
+                    {pet.species} 繚 {pet.breed} 繚 {typeof pet.age === 'object' ? `${pet.age.value}${pet.age.unit}` : pet.age}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {pet.shelter?.name || '?芰?嗅捆?'}
+                  </p>
+                </div>
+              </Link>
+              <div className="px-4 pb-4">
+                <button
+                  onClick={() => handleRemoveFavorite(pet._id)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  ???嗉?
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={Heart}
+          title="????遙雿秘??
+          description="???Ｙ揣?舀???撠酋嚗??迭?秘??
+          actionText="?汗撖萇"
+          actionLink="/pets"
+        />
+      )}
+    </div>
+  );
+};
+
+// Story 2.4: 撌脫?票??Tab
+const SavedPostsTab = () => {
+  const [page, setPage] = useState(1);
+
+  const { data: savedPostsData, isLoading } = useQuery(
+    ['savedPosts', page],
+    async () => {
+      const response = await fetch(`http://localhost:5000/api/users/saved-posts?page=${page}&limit=15`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('頛憭望?');
+      return response.json();
+    },
+    {
+      select: (response) => response.data,
+      keepPreviousData: true
+    }
+  );
+
+  if (isLoading) {
+    return (
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">撌脫?票??/h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <PetCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">撌脫?票??/h2>
+      
+      {savedPostsData?.posts?.length > 0 ? (
+        <>
+          <div className="mb-4 text-gray-600">
+            ??{savedPostsData.pagination?.total || 0} 蝭?票??
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {savedPostsData.posts.map((post, index) => (
+              <PostCard key={post._id} post={post} index={index} />
+            ))}
+          </div>
+
+          {/* ?? */}
+          {savedPostsData.pagination && savedPostsData.pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={!savedPostsData.pagination.hasPrevPage}
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                銝???
+              </button>
+
+              <span className="px-4 py-2 text-gray-700">
+                蝚?{page} / {savedPostsData.pagination.totalPages} ??
+              </span>
+
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={!savedPostsData.pagination.hasNextPage}
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                銝???
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <EmptyState
+          icon={Bookmark}
+          title="????遙雿票??
+          description="???Ｙ揣蝷曄黎嚗??迭?票??
+          actionText="??蝷曄黎"
+          actionLink="/community"
+        />
+      )}
+    </div>
+  );
+};
+
+// Story 1.4: 雿輻??憟賜恣??Tab
+const PreferencesTab = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [preferences, setPreferences] = useState({
+    species: [],
+    sizes: [],
+    ageCategories: [],
+    personality: [],
+    healthPreferences: {
+      vaccinated: false,
+      spayed: false,
+      microchipped: false,
+    },
+    specialNeeds: {
+      goodWithChildren: false,
+      goodWithOtherPets: false,
+    },
+  });
+
+  // ??雿輻????
+  const { data: userData, isLoading: loadingUser } = useQuery(
+    'user-profile',
+    () => userAPI.getProfile(),
+    {
+      select: (response) => response.data,
+      onSuccess: (data) => {
+        if (data.recommendationProfile) {
+          setPreferences({
+            species: data.recommendationProfile.species || [],
+            sizes: data.recommendationProfile.sizes || [],
+            ageCategories: data.recommendationProfile.ageCategories || [],
+            personality: data.recommendationProfile.personality || [],
+            healthPreferences: data.recommendationProfile.healthPreferences || {
+              vaccinated: false,
+              spayed: false,
+              microchipped: false,
+            },
+            specialNeeds: data.recommendationProfile.specialNeeds || {
+              goodWithChildren: false,
+              goodWithOtherPets: false,
+            },
+          });
+        }
+      },
+    }
+  );
+
+  // ?脣??末
+  const savePreferencesMutation = useMutation(
+    (prefs) => userAPI.updateProfile({ recommendationProfile: prefs }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('user-profile');
+        queryClient.invalidateQueries('recommendations');
+        toast.success('偏好設定已儲存');
+      },
+      onError: () => {
+        toast.error('儲存失敗，請稍後再試');
+      },
+    }
+  );
+
+  const handleCheckboxChange = (category, value) => {
+    setPreferences((prev) => {
+      const current = prev[category];
+      const updated = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+      return { ...prev, [category]: updated };
+    });
+  };
+
+  const handleHealthChange = (field) => {
+    setPreferences((prev) => ({
+      ...prev,
+      healthPreferences: {
+        ...prev.healthPreferences,
+        [field]: !prev.healthPreferences[field],
+      },
+    }));
+  };
+
+  const handleSpecialNeedsChange = (field) => {
+    setPreferences((prev) => ({
+      ...prev,
+      specialNeeds: {
+        ...prev.specialNeeds,
+        [field]: !prev.specialNeeds[field],
+      },
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    savePreferencesMutation.mutate(preferences);
+  };
+
+  if (loadingUser) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-300 rounded w-1/3 mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-300 rounded"></div>
+            <div className="h-10 bg-gray-300 rounded"></div>
+            <div className="h-10 bg-gray-300 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const speciesOptions = [
+    { value: 'dog', label: '?? },
+    { value: 'cat', label: '鞎? },
+    { value: 'rabbit', label: '??' },
+    { value: 'bird', label: '曈仿?' },
+    { value: 'other', label: '?嗡?' },
+  ];
+
+  const sizeOptions = [
+    { value: 'small', label: '撠?' },
+    { value: 'medium', label: '銝剖?' },
+    { value: 'large', label: '憭批?' },
+  ];
+
+  const ageCategoryOptions = [
+    { value: 'young', label: '撟澆僑 (0-2甇?' },
+    { value: 'adult', label: '?僑 (3-7甇?' },
+    { value: 'senior', label: '?僑 (8甇脖誑銝?' },
+  ];
+
+  const personalityOptions = [
+    { value: 'friendly', label: '閬芯犖' },
+    { value: 'energetic', label: '瘣餅?' },
+    { value: 'calm', label: '摰?' },
+    { value: 'independent', label: '?函?' },
+    { value: 'playful', label: '?' },
+    { value: 'loyal', label: '敹?' },
+    { value: 'protective', label: '霅瑁?' },
+    { value: 'curious', label: '憟賢?' },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">???末閮剖?</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          閮剖??函??末嚗???冽?行??秘??
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* ?拍車?末 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?末?拍車
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {speciesOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`
+                  flex items-center justify-center px-4 py-3 border-2 rounded-lg cursor-pointer transition-all
+                  ${preferences.species.includes(option.value)
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <input
+                  type="checkbox"
+                  checked={preferences.species.includes(option.value)}
+                  onChange={() => handleCheckboxChange('species', option.value)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 擃??末 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?末擃?
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {sizeOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`
+                  flex items-center justify-center px-4 py-3 border-2 rounded-lg cursor-pointer transition-all
+                  ${preferences.sizes.includes(option.value)
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <input
+                  type="checkbox"
+                  checked={preferences.sizes.includes(option.value)}
+                  onChange={() => handleCheckboxChange('sizes', option.value)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 撟湧翩?末 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?末撟湧翩
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {ageCategoryOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`
+                  flex items-center justify-center px-4 py-3 border-2 rounded-lg cursor-pointer transition-all
+                  ${preferences.ageCategories.includes(option.value)
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <input
+                  type="checkbox"
+                  checked={preferences.ageCategories.includes(option.value)}
+                  onChange={() => handleCheckboxChange('ageCategories', option.value)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* ?扳?末 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?末?扳
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {personalityOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`
+                  flex items-center justify-center px-4 py-3 border-2 rounded-lg cursor-pointer transition-all
+                  ${preferences.personality.includes(option.value)
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <input
+                  type="checkbox"
+                  checked={preferences.personality.includes(option.value)}
+                  onChange={() => handleCheckboxChange('personality', option.value)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* ?亙熒???憟?*/}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?亙熒???憟?
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={preferences.healthPreferences.vaccinated}
+                onChange={() => handleHealthChange('vaccinated')}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">撌脫蝔桃??/span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={preferences.healthPreferences.spayed}
+                onChange={() => handleHealthChange('spayed')}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">撌脩???/span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={preferences.healthPreferences.microchipped}
+                onChange={() => handleHealthChange('microchipped')}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">撌脫??交??/span>
+            </label>
+          </div>
+        </div>
+
+        {/* ?寞??瘙?*/}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ?寞??瘙?
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={preferences.specialNeeds.goodWithChildren}
+                onChange={() => handleSpecialNeedsChange('goodWithChildren')}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">?拙???蝡亦?摰嗅滬</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={preferences.specialNeeds.goodWithOtherPets}
+                onChange={() => handleSpecialNeedsChange('goodWithOtherPets')}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">?拙??隞秘?拍??/span>
+            </label>
+          </div>
+        </div>
+
+        {/* ?漱?? */}
+        <div className="flex justify-end pt-6 border-t">
+          <button
+            type="submit"
+            disabled={savePreferencesMutation.isLoading}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {savePreferencesMutation.isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ?脣?銝?..
+              </>
+            ) : (
+              '?脣??末閮剖?'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// ??鞎潭? Tab
+const PostsTab = () => {
+  const { user } = useAuth();
+  const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
+
+  const { data: postsData, isLoading } = useQuery(
+    ['myPosts', page],
+    async () => {
+      const response = await fetch(
+        `http://localhost:5000/api/posts?author=${user?._id}&page=${page}&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      if (!response.ok) throw new Error('頛憭望?');
+      return response.json();
+    },
+    {
+      enabled: !!user,
+      select: (response) => response.data,
+      keepPreviousData: true
+    }
+  );
+
+  const deleteMutation = useMutation(
+    async (postId) => {
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('?芷憭望?');
+      return response.json();
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('myPosts');
+        toast.success('鞎潭?撌脣??);
+      },
+      onError: () => {
+        toast.error('載入失敗，請稍後再試');
+      }
+    }
+  );
+
+  const handleDelete = (postId) => {
+    if (window.confirm('蝣箏?閬?日?鞎潭???甇斗?雿瘜儔??)) {
+      deleteMutation.mutate(postId);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">??鞎潭?</h2>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-gray-100 rounded-lg h-48 animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">??鞎潭?</h2>
+        <Link to="/community/create" className="btn-primary">
+          ?澆??啗票??
+        </Link>
+      </div>
+
+      {postsData?.posts && postsData.posts.length > 0 ? (
+        <>
+          <div className="space-y-6">
+            {postsData.posts.map((post) => (
+              <div key={post._id} className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <Link 
+                      to={`/community/${post._id}`}
+                      className="text-xl font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+                    >
+                      {post.title}
+                    </Link>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(post.createdAt).toLocaleDateString('zh-TW')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-4 h-4" />
+                        {post.views || 0} 甈∠汗
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4" />
+                        {post.commentCount || 0} ??閮
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-4 h-4" />
+                        {post.likeCount || 0} ??
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/community/${post._id}`}
+                      className="btn-secondary text-sm"
+                    >
+                      ?亦?
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(post._id)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
+                      disabled={deleteMutation.isLoading}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {post.content && (
+                  <p className="text-gray-700 line-clamp-3 mb-4">
+                    {post.content}
+                  </p>
+                )}
+
+                {post.images && post.images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {post.images.slice(0, 3).map((image, idx) => (
+                      <img
+                        key={idx}
+                        src={image}
+                        alt={`${post.title} - ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                    ))}
+                    {post.images.length > 3 && (
+                      <div className="bg-gray-100 rounded-lg flex items-center justify-center text-gray-600">
+                        +{post.images.length - 3} 撘?
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {post.tags && post.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {post.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* ?? */}
+          {postsData.pagination && postsData.pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              <button
+                onClick={() => setPage(p => p - 1)}
+                disabled={!postsData.pagination.hasPrevPage}
+                className="pagination-btn"
+              >
+                銝???
+              </button>
+
+              <span className="px-4 py-2 text-gray-700">
+                蝚?{page} / {postsData.pagination.totalPages} ??
+              </span>
+
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={!postsData.pagination.hasNextPage}
+                className="pagination-btn"
+              >
+                銝???
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <EmptyState
+          icon={FileText}
+          title="???撣遙雿票??
+          description="?澈?函?擗秘蝬??閎鈭????冗蝢支???
+          actionText="?澆?蝚砌?蝭票??
+          actionLink="/community/create"
+        />
+      )}
+    </div>
+  );
+};
+
+// Story 3.2: ??瑼?閮剖? Tab
+const MatchingProfileTab = () => {
+  const queryClient = useQueryClient();
+  
+  // ????瑼?鞈?
+  const { data: profileData, isLoading } = useQuery(
+    'matchingProfile',
+    () => matchingAPI.getProfile(),
+    {
+      select: (response) => response.data
+    }
+  );
+
+  const handleSave = () => {
+    // ?????瑼?鞈?
+    queryClient.invalidateQueries('matchingProfile');
+    toast.success('配對檔案已更新');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">??瑼?閮剖?</h2>
+        <p className="text-gray-600">
+          摰??函??暑?孵???撽??啣?鞈?嚗鼠?拇???冽?唳??拙??秘?押?
+        </p>
+      </div>
+      
+      <ProfileSettingsForm initialData={profileData} onSave={handleSave} />
+    </div>
+  );
+};
+
+export default ProfilePage;
+
+
+
+

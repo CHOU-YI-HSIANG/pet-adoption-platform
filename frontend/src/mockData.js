@@ -1,0 +1,266 @@
+﻿// 前端模擬寵物資料 (用於開發測試,無需資料庫)
+export const mockPets = [
+  {
+    _id: '1',
+    name: '小白',
+    species: '狗',
+    breed: '拉布拉多',
+    age: 2,
+    gender: '公',
+    size: '大型',
+    color: '白色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['友善', '活潑', '親人'],
+    description: '非常親人的拉布拉多,喜歡玩耍和游泳,適合有院子的家庭。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1552053831-71594a27632d?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: true,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-01-15')
+  },
+  {
+    _id: '2',
+    name: '橘子',
+    species: '貓',
+    breed: '橘貓',
+    age: 1,
+    gender: '母',
+    size: '中型',
+    color: '橘色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['溫柔', '安靜', '獨立'],
+    description: '可愛的橘貓,個性溫和,適合公寓飼養。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-02-01')
+  },
+  {
+    _id: '3',
+    name: '小黑',
+    species: '狗',
+    breed: '混種',
+    age: 3,
+    gender: '公',
+    size: '中型',
+    color: '黑色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['忠誠', '警覺', '聰明'],
+    description: '忠心的混種犬,已訓練基本服從指令,適合有經驗的飼主。',
+    location: '新北市',
+    images: ['https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: true,
+      acceptsOtherPets: false
+    },
+    createdAt: new Date('2024-01-20')
+  },
+  {
+    _id: '4',
+    name: '花花',
+    species: '貓',
+    breed: '三花貓',
+    age: 4,
+    gender: '母',
+    size: '小型',
+    color: '三花',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['獨立', '優雅', '挑食'],
+    description: '優雅的三花貓,喜歡安靜的環境,適合單身或小家庭。',
+    location: '台中市',
+    images: ['https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: false
+    },
+    createdAt: new Date('2024-01-25')
+  },
+  {
+    _id: '5',
+    name: '金金',
+    species: '狗',
+    breed: '黃金獵犬',
+    age: 5,
+    gender: '母',
+    size: '大型',
+    color: '金色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['溫和', '友善', '愛玩'],
+    description: '成熟穩重的黃金獵犬,非常適合有小孩的家庭。',
+    location: '台中市',
+    images: ['https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: true,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-02-05')
+  },
+  {
+    _id: '6',
+    name: '雪球',
+    species: '貓',
+    breed: '波斯貓',
+    age: 2,
+    gender: '母',
+    size: '中型',
+    color: '白色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['高貴', '安靜', '慵懶'],
+    description: '漂亮的波斯貓,需要定期美容,適合有時間照顧的飼主。',
+    location: '高雄市',
+    images: ['https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: false,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-02-10')
+  },
+  {
+    _id: '7',
+    name: '阿福',
+    species: '狗',
+    breed: '柴犬',
+    age: 1,
+    gender: '公',
+    size: '中型',
+    color: '赤色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: false,
+    personality: ['活潑', '好奇', '固執'],
+    description: '可愛的柴犬幼犬,精力旺盛,需要每天運動。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: true,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-02-12')
+  },
+  {
+    _id: '8',
+    name: '咪咪',
+    species: '貓',
+    breed: '美國短毛貓',
+    age: 3,
+    gender: '母',
+    size: '中型',
+    color: '銀色虎斑',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['友善', '活潑', '好奇'],
+    description: '活潑的美短,喜歡和人互動,適合家庭飼養。',
+    location: '桃園市',
+    images: ['https://images.unsplash.com/photo-1573865526739-10c1d3a1f0cc?w=600'],
+    status: '可認養',
+    shelter: {
+      _id: 'shelter1',
+      name: '愛心動物之家',
+      shelterInfo: {
+        shelterName: '愛心動物之家',
+        phone: '02-12345678'
+      }
+    },
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: true
+    },
+    createdAt: new Date('2024-02-15')
+  }
+];
+
+// 測試用收容所帳號資訊
+export const mockShelterAccount = {
+  email: 'shelter@example.com',
+  password: 'shelter123',
+  name: '愛心動物之家'
+};

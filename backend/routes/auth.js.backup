@@ -1,0 +1,656 @@
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('../models/User');
+const logger = require('../utils/logger');
+const { validateBody } = require('../middleware/validation');
+const {
+  userRegisterSchema,
+  userLoginSchema,
+  userUpdateSchema,
+  googleAuthSchema
+} = require('../utils/validators');
+const router = express.Router();
+
+// ?�置 Google OAuth Strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback'
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      // ?�找?�否已�??�此 Google 帳�?
+      let user = await User.findOne({ google_id: profile.id });
+      
+      if (user) {
+        // ?�新?�後登?��???
+        await user.updateLastLogin();
+        return done(null, user);
+      }
+      
+      // 檢查 email ?�否已被一?�帳?�使??
+      const emailExists = await User.findOne({ 
+        email: profile.emails[0].value 
+      });
+      
+      if (emailExists) {
+        // 如�? email 已�???�?Google ID 綁�??�現?�帳??
+        emailExists.google_id = profile.id;
+        if (profile.photos && profile.photos.length > 0) {
+          emailExists.avatar_url = profile.photos[0].value;
+        }
+        await emailExists.save();
+        await emailExists.updateLastLogin();
+        return done(null, emailExists);
+      }
+      
+      // 建�??�使?��?
+      const newUser = new User({
+        google_id: profile.id,
+        email: profile.emails[0].value,
+        firstName: profile.name.givenName || '',
+        lastName: profile.name.familyName || '',
+        name: `${profile.name.givenName || ''} ${profile.name.familyName || ''}`.trim(),
+        username: `google_${profile.id}`,
+        avatar_url: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
+        is_verified: true // Google 帳�?視為已�?�?
+      });
+      
+      await newUser.save();
+      return done(null, newUser);
+      
+    } catch (error) {
+      return done(error, null);
+    }
+  }
+));
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id).select('-password');
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// 中�?件�?驗�? JWT Token
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    logger.warn('認證失敗: 缺少 token', { ip: req.ip, url: req.originalUrl });
+    return res.status(401).json({ error: '需要提供存取權杖' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user || !user.isActive) {
+      logger.warn('認證失敗: 無效的使用者', { userId: decoded.userId, ip: req.ip });
+      return res.status(401).json({ error: '無效的使用者帳號' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    logger.warn('認證失敗: Token 驗證錯誤', { error: error.message, ip: req.ip });
+    return res.status(403).json({ error: '無效的存取權杖' });
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: 使用者註冊
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 30
+ *                 description: 使用者名稱
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 電子郵件
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: 密碼
+ *               firstName:
+ *                 type: string
+ *                 description: 名字
+ *               lastName:
+ *                 type: string
+ *                 description: 姓氏
+ *               phone:
+ *                 type: string
+ *                 description: 電話號碼
+ *               address:
+ *                 type: object
+ *                 properties:
+ *                   city:
+ *                     type: string
+ *                   district:
+ *                     type: string
+ *                   street:
+ *                     type: string
+ *     responses:
+ *       201:
+ *         description: 註冊成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                   description: JWT Token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: 註冊失敗 (帳號已存在或資料驗證錯誤)
+ */
+// 註�?
+router.post('/register', validateBody(userRegisterSchema), async (req, res) => {
+  try {
+    const {
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      address
+    } = req.body;
+
+    logger.info('使用?�註?��?�?, { username, email, ip: req.ip });
+
+    // 檢查使用?�是?�已存在
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      logger.warn('註�?失�?: 帳�?已�???, { 
+        username, 
+        email, 
+        conflict: existingUser.email === email ? 'email' : 'username' 
+      });
+      return res.status(400).json({
+        error: existingUser.email === email ? '此電子郵件已被註?? : '此使?�者�?稱已被使??
+      });
+    }
+
+    // 建�??�使?��?
+    const user = new User({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      address
+    });
+
+    await user.save();
+
+    // ?��? JWT Token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    logger.info('使用?�註?��???, { userId: user._id, username, email });
+
+    res.status(201).json({
+      message: '註�??��?',
+      token,
+      user: user.toSafeObject()
+    });
+
+  } catch (error) {
+    logger.error('註�??�誤', { error: error.message, stack: error.stack });
+    res.status(400).json({
+      error: '註�?失�?',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: 使用者登入
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 電子郵件
+ *               password:
+ *                 type: string
+ *                 description: 密碼
+ *     responses:
+ *       200:
+ *         description: 登入成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                   description: JWT Token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: 登入失敗 (帳號或密碼錯誤)
+ */
+// ?�入
+router.post('/login', validateBody(userLoginSchema), async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    logger.info('使用?�登?��?�?, { email, ip: req.ip });
+
+    // ?�找使用??
+    const user = await User.findOne({ email });
+
+    if (!user || !user.isActive) {
+      logger.warn('?�入失�?: 使用?��?存在?�未?�用', { email, ip: req.ip });
+      return res.status(401).json({
+        error: '?��??�件?��?碼錯�?
+      });
+    }
+
+    // 驗�?密碼
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      logger.warn('?�入失�?: 密碼?�誤', { email, userId: user._id, ip: req.ip });
+      return res.status(401).json({
+        error: '?��??�件?��?碼錯�?
+      });
+    }
+
+    // ?�新?�後登?��???
+    await user.updateLastLogin();
+
+    // ?��? JWT Token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    logger.info('使用?�登?��???, { userId: user._id, email, ip: req.ip });
+
+    res.json({
+      message: '?�入?��?',
+      token,
+      user: user.toSafeObject()
+    });
+
+  } catch (error) {
+    logger.error('?�入?�誤', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      error: '?�入失�?',
+      details: error.message
+    });
+  }
+});
+
+// ?��??��?使用?��?�?
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      user: req.user.toSafeObject()
+    });
+  } catch (error) {
+    logger.error('?��?使用?��?訊錯�?, { userId: req.user?._id, error: error.message });
+    res.status(500).json({
+      error: '?��??��?使用?��?�?
+    });
+  }
+});
+
+// ?�新使用?��?�?
+router.put('/profile', authenticateToken, validateBody(userUpdateSchema), async (req, res) => {
+  try {
+    const allowedUpdates = [
+      'firstName', 'lastName', 'phone', 'address', 'preferences'
+    ];
+    
+    const updates = {};
+    Object.keys(req.body).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = req.body[key];
+      }
+    });
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        error: '?��??�使?��?
+      });
+    }
+
+    res.json({
+      message: '?�人資�??�新?��?',
+      user: user.toSafeObject()
+    });
+
+  } catch (error) {
+    logger.error('?�新?�人資�??�誤', { error: error.message, stack: error.stack });
+    res.status(400).json({
+      error: '?�新?�人資�?失�?',
+      details: error.message
+    });
+  }
+});
+
+// 變更密碼
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: '請�?供目?��?碼�??��?�?
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        error: '?��?碼至少�?�?6 ?��???
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    // 驗�??��?密碼
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        error: '?��?密碼?�誤'
+      });
+    }
+
+    // ?�新密碼
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      message: '密碼變更?��?'
+    });
+
+  } catch (error) {
+    logger.error('變更密碼?�誤', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      error: '密碼變更失�?',
+      details: error.message
+    });
+  }
+});
+
+// ?�除帳�?
+router.delete('/account', authenticateToken, async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        error: '請�?供�?碼以確�??�除帳�?'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    // 驗�?密碼
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        error: '密碼?�誤'
+      });
+    }
+
+    // 軟刪?��?設為?�活躍�?
+    user.isActive = false;
+    await user.save();
+
+    res.json({
+      message: '帳�?已�??�刪??
+    });
+
+  } catch (error) {
+    logger.error('?�除帳�??�誤', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      error: '?�除帳�?失�?',
+      details: error.message
+    });
+  }
+});
+
+// 驗�? Token
+router.post('/verify-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        error: '請�?供�???
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        error: '?��??��???
+      });
+    }
+
+    res.json({
+      valid: true,
+      user: user.toSafeObject()
+    });
+
+  } catch (error) {
+    res.status(401).json({
+      valid: false,
+      error: '?��??��???
+    });
+  }
+});
+
+// ============ Google OAuth 路由 ============
+
+// ?��???Google OAuth ?�入
+router.get('/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email']
+  })
+);
+
+// Google OAuth ?�呼
+router.get('/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: 'http://localhost:3000/login?error=google_auth_failed'
+  }),
+  async (req, res) => {
+    try {
+      // ?��? JWT Token
+      const token = jwt.sign(
+        { userId: req.user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // ?��??�到?�端,帶�? token
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+      
+    } catch (error) {
+      logger.error('Google OAuth ?�呼?�誤', { error: error.message, stack: error.stack });
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=auth_failed`);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/auth/google/verify:
+ *   post:
+ *     summary: Google One Tap 登入驗證
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google ID Token
+ *     responses:
+ *       200:
+ *         description: 登入成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                   description: JWT Token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Token 驗證失敗
+ */
+// Google One Tap ?�入 (?�於?�端?�接?��? Google Token)
+router.post('/google/verify', validateBody(googleAuthSchema), async (req, res) => {
+  try {
+    const { token: googleToken } = req.body;
+    
+    // 使用 Google API 驗�? token
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    const ticket = await client.verifyIdToken({
+      idToken: googleToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    
+    const payload = ticket.getPayload();
+    const googleId = payload['sub'];
+    const email = payload['email'];
+    const firstName = payload['given_name'] || '';
+    const lastName = payload['family_name'] || '';
+    const avatar = payload['picture'];
+    
+    // ?�找?�建立使?��?
+    let user = await User.findOne({ google_id: googleId });
+    
+    if (!user) {
+      // 檢查 email ?�否已被使用
+      const emailExists = await User.findOne({ email });
+      
+      if (emailExists) {
+        // 綁�? Google ID ?�現?�帳??
+        emailExists.google_id = googleId;
+        if (avatar) emailExists.avatar_url = avatar;
+        await emailExists.save();
+        user = emailExists;
+      } else {
+        // 建�??�使?��?
+        user = new User({
+          google_id: googleId,
+          email,
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`.trim(),
+          username: `google_${googleId}`,
+          avatar_url: avatar,
+          is_verified: true
+        });
+        await user.save();
+      }
+    }
+    
+    // ?�新?�後登?��???
+    await user.updateLastLogin();
+    
+    // ?��? JWT Token
+    const jwtToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.json({
+      message: 'Google ?�入?��?',
+      token: jwtToken,
+      user: user.toSafeObject()
+    });
+    
+  } catch (error) {
+    logger.error('Google One Tap 驗�??�誤', { error: error.message, stack: error.stack });
+    res.status(401).json({
+      error: 'Google 驗�?失�?',
+      details: error.message
+    });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,263 @@
+﻿const mongoose = require('mongoose');
+const Pet = require('./models/Pet');
+const User = require('./models/User');
+require('dotenv').config();
+
+// 示範寵物資料
+const samplePets = [
+  {
+    name: '小白',
+    species: '狗',
+    breed: '拉布拉多',
+    age: 2,
+    gender: '公',
+    size: '大型',
+    color: '白色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['友善', '活潑', '親人'],
+    description: '非常親人的拉布拉多,喜歡玩耍和游泳,適合有院子的家庭。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1552053831-71594a27632d?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: true,
+      acceptsOtherPets: true
+    }
+  },
+  {
+    name: '橘子',
+    species: '貓',
+    breed: '橘貓',
+    age: 1,
+    gender: '母',
+    size: '中型',
+    color: '橘色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['溫柔', '安靜', '獨立'],
+    description: '可愛的橘貓,個性溫和,適合公寓飼養。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: true
+    }
+  },
+  {
+    name: '小黑',
+    species: '狗',
+    breed: '混種',
+    age: 3,
+    gender: '公',
+    size: '中型',
+    color: '黑色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['忠誠', '警覺', '聰明'],
+    description: '忠心的混種犬,已訓練基本服從指令,適合有經驗的飼主。',
+    location: '新北市',
+    images: ['https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: true,
+      acceptsOtherPets: false
+    }
+  },
+  {
+    name: '花花',
+    species: '貓',
+    breed: '三花貓',
+    age: 4,
+    gender: '母',
+    size: '小型',
+    color: '三花',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['獨立', '優雅', '挑食'],
+    description: '優雅的三花貓,喜歡安靜的環境,適合單身或小家庭。',
+    location: '台中市',
+    images: ['https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: false
+    }
+  },
+  {
+    name: '金金',
+    species: '狗',
+    breed: '黃金獵犬',
+    age: 5,
+    gender: '母',
+    size: '大型',
+    color: '金色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['溫和', '友善', '愛玩'],
+    description: '成熟穩重的黃金獵犬,非常適合有小孩的家庭。',
+    location: '台中市',
+    images: ['https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: true,
+      acceptsOtherPets: true
+    }
+  },
+  {
+    name: '雪球',
+    species: '貓',
+    breed: '波斯貓',
+    age: 2,
+    gender: '母',
+    size: '中型',
+    color: '白色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['高貴', '安靜', '慵懶'],
+    description: '漂亮的波斯貓,需要定期美容,適合有時間照顧的飼主。',
+    location: '高雄市',
+    images: ['https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: false,
+      acceptsOtherPets: true
+    }
+  },
+  {
+    name: '阿福',
+    species: '狗',
+    breed: '柴犬',
+    age: 1,
+    gender: '公',
+    size: '中型',
+    color: '赤色',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: false,
+    personality: ['活潑', '好奇', '固執'],
+    description: '可愛的柴犬幼犬,精力旺盛,需要每天運動。',
+    location: '台北市',
+    images: ['https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: true,
+      hasYard: true,
+      acceptsOtherPets: true
+    }
+  },
+  {
+    name: '咪咪',
+    species: '貓',
+    breed: '美國短毛貓',
+    age: 3,
+    gender: '母',
+    size: '中型',
+    color: '銀色虎斑',
+    healthStatus: '健康',
+    vaccinated: true,
+    neutered: true,
+    personality: ['友善', '活潑', '好奇'],
+    description: '活潑的美短,喜歡和人互動,適合家庭飼養。',
+    location: '桃園市',
+    images: ['https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400'],
+    status: '可認養',
+    shelterRequirements: {
+      hasExperience: false,
+      hasYard: false,
+      acceptsOtherPets: true
+    }
+  }
+];
+
+async function seedDatabase() {
+  try {
+    // 連接資料庫
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pet_adoption');
+    console.log(' 已連接到 MongoDB');
+
+    // 尋找或建立示範收容所帳號
+    let shelterUser = await User.findOne({ email: 'shelter@example.com' });
+    
+    if (!shelterUser) {
+      console.log(' 建立示範收容所帳號...');
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('shelter123', 10);
+      
+      shelterUser = await User.create({
+        name: '愛心動物之家',
+        email: 'shelter@example.com',
+        password: hashedPassword,
+        role: 'shelter',
+        phone: '02-12345678',
+        address: '台北市信義區',
+        shelterInfo: {
+          shelterName: '愛心動物之家',
+          licenseNumber: 'SH-2024-001',
+          address: '台北市信義區信義路五段100號',
+          phone: '02-12345678',
+          capacity: 50,
+          established: new Date('2020-01-01')
+        }
+      });
+      console.log(' 收容所帳號建立成功');
+      console.log('   帳號: shelter@example.com');
+      console.log('   密碼: shelter123');
+    } else {
+      console.log(' 使用現有收容所帳號');
+    }
+
+    // 清除舊資料 (可選)
+    const confirmClear = process.argv.includes('--clear');
+    if (confirmClear) {
+      await Pet.deleteMany({});
+      console.log('  已清除舊的寵物資料');
+    }
+
+    // 新增寵物資料
+    console.log('\n📝 開始載入寵物資料...');
+    
+    for (const petData of samplePets) {
+      const pet = await Pet.create({
+        ...petData,
+        shelter: shelterUser._id
+      });
+      console.log(`✅ 已新增: ${pet.name} (${pet.species} - ${pet.breed})`);
+    }
+
+    console.log(`\n🎉 成功載入 ${samplePets.length} 隻寵物資料!`);
+    console.log('\n📊 摘要:');
+    const dogCount = samplePets.filter(p => p.species === '狗').length;
+    const catCount = samplePets.filter(p => p.species === '貓').length;
+    console.log(`   狗: ${dogCount} 隻`);
+    console.log(`   貓: ${catCount} 隻`);
+    
+    console.log('\n🌐 您現在可以:');
+    console.log('   1. 前往 http://localhost:3000/pets 查看寵物列表');
+    console.log('   2. 使用 shelter@example.com / shelter123 登入收容所帳號');
+    console.log('   3. 建立一般用戶帳號來測試認養功能');
+
+  } catch (error) {
+    console.error('❌ 錯誤:', error.message);
+    console.error(error);
+  } finally {
+    await mongoose.connection.close();
+    console.log('\n👋 資料庫連接已關閉');
+  }
+}
+
+// 執行
+seedDatabase();
