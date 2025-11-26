@@ -15,11 +15,7 @@ jobs:
         image: mongo:5.0
         ports:
           - 27017:27017
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+        options: "--health-cmd='mongosh --eval \"db.adminCommand({ ping: 1 })\"' --health-interval=10s --health-timeout=5s --health-retries=5"
     env:
       MONGODB_URI: mongodb://localhost:27017/pet_adoption_test
       READINESS_RETRIES: 60
@@ -76,6 +72,18 @@ jobs:
         working-directory: backend
         run: |
           node test-integration-verbose.js
+
+      - name: Run Socket.IO resilience tests
+        working-directory: backend
+        run: |
+          echo "Running Socket.IO resilience tests..."
+          node test-socketio-resilience.js
+
+      - name: Run quick load test (smoke test)
+        working-directory: backend
+        run: |
+          echo "Running quick load test..."
+          npm run test:load:quick
 
       - name: Upload server log on failure
         if: failure()
