@@ -43,10 +43,10 @@ app.use(helmet({
 // 壓縮中間件
 app.use(compression());
 
-// 全域速率限制 - 開發環境更寬鬆
+// 全域速率限制 - 測試環境禁用，開發環境寬鬆
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 分鐘
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 開發環境: 1000, 生產環境: 100
+  max: process.env.NODE_ENV === 'test' ? 100000 : (process.env.NODE_ENV === 'development' ? 1000 : 100),
   message: {
     error: '請求過於頻繁，請稍後再試'
   },
@@ -54,18 +54,20 @@ const limiter = rateLimit({
   legacyHeaders: false
 });
 
-// 註冊/登入專用限制 - 防止暴力破解
+// 註冊/登入專用限制 - 防止暴力破解（測試環境放寬）
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 分鐘
-  max: process.env.NODE_ENV === 'development' ? 50 : 5, // 開發環境: 50次, 生產環境: 5次
+  max: process.env.NODE_ENV === 'test' ? 100000 : (process.env.NODE_ENV === 'development' ? 50 : 5),
   message: {
     error: '嘗試次數過多，請稍後再試'
   },
   skipSuccessfulRequests: true // 成功的請求不計入限制
 });
 
-// 中間件設定
-app.use(limiter);
+// 中間件設定 - 測試環境跳過 rate limiting
+if (process.env.NODE_ENV !== 'test') {
+  app.use(limiter);
+}
 
 // HTTP 請求日誌 (morgan + winston)
 app.use(morgan('combined', { stream: logger.stream }));
