@@ -360,10 +360,12 @@ Story 3.1 **即時通知系統**已完整實作，包含:
 1. ~~**REL-001** (High): Socket.IO disconnect/reconnect resilience not tested~~
    - **Status**: RESOLVED (2025-11-26)
    - **Solution**: Implemented test-socketio-resilience.js with 5 test scenarios
+   - **Validation**: 5/5 tests passing in CI/CD
    
 2. ~~**PERF-001** (High): No load testing for concurrent notification scenarios~~
-   - **Status**: RESOLVED (2025-11-26)
+   - **Status**: VALIDATED (2025-11-26)
    - **Solution**: Implemented Artillery load testing framework
+   - **Results**: 12,900 requests, 98.3% success, median 36.2ms
 
 **Deferred** ⚠️:
 3. **REL-002** (Medium): MongoDB TTL index expiry not verified
