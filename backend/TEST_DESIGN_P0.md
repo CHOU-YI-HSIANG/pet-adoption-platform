@@ -1,6 +1,6 @@
 # 測試設計：P0 全套（Readiness / Core Pets / Favorites / Integration Regression）
 
-版本：2025-11-24
+版本：2025-11-26（更新）
 
 目的：驗證系統在啟動後能穩定就緒（readiness）、核心寵物列表與詳情契約、我的收藏同步行為，並以整合回歸測試（verbose）確認整體行為。
 

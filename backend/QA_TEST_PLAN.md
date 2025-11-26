@@ -32,6 +32,8 @@
 - 系統整合測試 (Integration)
 - API 合約驗證 (Contract)
 - 基本安全/授權檢查 (Authentication/Authorization smoke checks)
+- Socket.IO 容錯與重連測試 (Resilience Testing)
+- 負載與效能測試 (Load & Performance Testing)
 
 ## 5. 測試環境
 
@@ -44,6 +46,11 @@
 - 執行整合測試:
   - `node test-integration-verbose.js`（推薦，含詳細輸出）
   - `node test-integration.js`（簡潔版）
+- 執行 Socket.IO 測試:
+  - `npm run test:socketio` 或 `node test-socketio-resilience.js`
+- 執行負載測試:
+  - `npm run test:load` （完整 5 分鐘測試）
+  - `npm run test:load:quick` （快速測試）
 - 需求: 有可用的 MongoDB 連線（.env 中配置 `MONGODB_URI`）
 
 ### CI/CD 環境
@@ -57,12 +64,19 @@
   4. 執行資料庫 seed (`node seed.js`)
   5. 等待 readiness (`/api/ready`)
   6. 執行整合測試 (`node test-integration-verbose.js`)
+  7. 執行 Socket.IO 測試 (`npm run test:socketio`)
+  8. 執行快速負載測試 (`npm run test:load:quick`)
 - 測試結果: 可於 GitHub Actions 頁面查看
+- 註: 完整負載測試建議僅在 release 分支執行
 
 ## 6. 進入 / 退出準則
 - 進入準則: 開發伺服器可啟動且 health endpoint 回傳 200。
 - 退出準則: 所有測試用例均標註 Pass，或已記錄所有失敗案例並提出修正建議。
-- **最新狀態 (2025-11-26)**: ✅ 整合測試通過 12/12 (100%)，CI workflow 正常運行
+- **最新狀態 (2025-11-26)**: ✅ 所有測試完成
+  - 整合測試: 12/12 (100%)
+  - Socket.IO 容錯測試: 5/5 (100%)
+  - 負載測試: 12,900 requests (98.3% success)
+  - CI workflow 正常運行
 
 ## 7. 角色與職責
 - 測試執行者: 負責啟動伺服器並執行 `test-integration.js`，將輸出貼入測試報告。
@@ -105,14 +119,29 @@
    - `backend/models/Pet.js`: 修正寵物按讚功能
    - 所有 `ObjectId()` 改為 `new mongoose.Types.ObjectId()`
 
+5. **Socket.IO 容錯測試框架**
+   - 新增 `backend/test-socketio-resilience.js`
+   - 測試場景: 連接、推送、斷線重連、緩衝、多次重連
+   - 結果: 5/5 測試通過
+
+6. **負載測試框架 (Artillery)**
+   - 新增 `backend/load-test-notifications.yml`
+   - 測試場景: Warm-up → Load → Stress → Cooldown
+   - 執行結果: 12,900 requests, 98.3% success
+   - 效能基準: median 36.2ms (優秀)
+
 ### 測試驗證結果
 - 本地整合測試: ✅ 12/12 通過 (100%)
+- Socket.IO 測試: ✅ 5/5 通過 (100%)
+- 負載測試: ✅ 12,900 requests (98.3% success)
 - CI 自動化測試: ✅ 通過
 - 功能驗證:
   - ✅ 寵物收藏功能正常
   - ✅ 貼文收藏功能正常
   - ✅ 寵物按讚功能正常
   - ✅ API readiness 檢查穩定
+  - ✅ WebSocket 連接與重連機制穩定
+  - ✅ 高併發通知推送效能達標
 
 ---
 
