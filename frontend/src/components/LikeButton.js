@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import { useMutation, useQueryClient } from 'react-query';
 import { toast } from 'react-hot-toast';
@@ -9,6 +9,15 @@ const LikeButton = ({ postId, initialLiked = false, initialCount = 0, showCount 
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
+
+  // 當 initialLiked 或 initialCount prop 變更時，同步更新本地狀態
+  useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked]);
+
+  useEffect(() => {
+    setCount(initialCount);
+  }, [initialCount]);
 
   const likeMutation = useMutation(
     async () => {
@@ -28,9 +37,15 @@ const LikeButton = ({ postId, initialLiked = false, initialCount = 0, showCount 
     },
     {
       onMutate: async () => {
+        // 保存當前狀態用於回滾
+        const previousLiked = liked;
+        const previousCount = count;
+        
         // Optimistic update
         setLiked(!liked);
         setCount(liked ? count - 1 : count + 1);
+        
+        return { previousLiked, previousCount };
       },
       onSuccess: (data) => {
         // 更新從 server 返回的真實數據
@@ -43,10 +58,14 @@ const LikeButton = ({ postId, initialLiked = false, initialCount = 0, showCount 
         queryClient.invalidateQueries(['posts']);
         queryClient.invalidateQueries(['post', postId]);
       },
-      onError: (error) => {
-        // 回滾
-        setLiked(liked);
-        setCount(count);
+      onError: (error, variables, context) => {
+        // 回滾到原本的狀態
+        if (context?.previousLiked !== undefined) {
+          setLiked(context.previousLiked);
+        }
+        if (context?.previousCount !== undefined) {
+          setCount(context.previousCount);
+        }
         toast.error(error.message || '操作失敗，請稍後再試');
       }
     }

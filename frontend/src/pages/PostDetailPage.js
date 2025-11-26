@@ -20,10 +20,19 @@ const PostDetailPage = () => {
   const { data: post, isLoading } = useQuery(
     ['post', id],
     async () => {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}`);
+      const response = await fetch(`http://localhost:5000/api/posts/${id}`, {
+        headers: isAuthenticated ? {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        } : {}
+      });
       if (!response.ok) throw new Error('載入失敗');
       const result = await response.json();
       return result.data;
+    },
+    {
+      refetchOnMount: 'always',
+      refetchOnWindowFocus: true,
+      staleTime: 0
     }
   );
 
@@ -248,7 +257,7 @@ const PostDetailPage = () => {
             <div className="flex items-center gap-6">
               <LikeButton
                 postId={post._id}
-                initialLiked={false}
+                initialLiked={post.isLiked || false}
                 initialCount={post.stats?.likes || 0}
                 showCount={true}
               />
@@ -261,7 +270,7 @@ const PostDetailPage = () => {
                 <span className="text-sm">{post.stats?.views || 0}</span>
               </div>
             </div>
-            <SaveButton postId={post._id} initialSaved={false} />
+            <SaveButton postId={post._id} initialSaved={post.isSaved || false} />
           </div>
         </motion.div>
 

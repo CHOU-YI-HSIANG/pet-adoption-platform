@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Bookmark } from 'lucide-react';
 import { useMutation, useQueryClient } from 'react-query';
 import { toast } from 'react-hot-toast';
@@ -8,6 +8,11 @@ const SaveButton = ({ postId, initialSaved = false }) => {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(initialSaved);
+
+  // 當 initialSaved prop 變更時，同步更新本地狀態
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved]);
 
   const saveMutation = useMutation(
     async () => {
@@ -27,8 +32,13 @@ const SaveButton = ({ postId, initialSaved = false }) => {
     },
     {
       onMutate: async () => {
+        // 保存當前狀態用於回滾
+        const previousSaved = saved;
+        
         // Optimistic update
         setSaved(!saved);
+        
+        return { previousSaved };
       },
       onSuccess: (data) => {
         // 更新從 server 返回的真實數據
@@ -38,13 +48,17 @@ const SaveButton = ({ postId, initialSaved = false }) => {
         
         toast.success(data.message || (saved ? '已取消收藏' : '已收藏貼文'));
         
-        // 使相關查詢失效
+        // 使相關查詢失效，確保所有頁面的資料同步
         queryClient.invalidateQueries(['savedPosts']);
         queryClient.invalidateQueries(['posts']);
+        queryClient.invalidateQueries(['post', postId]); // 使單個貼文詳情也失效
+        queryClient.invalidateQueries(['userProfile']);
       },
-      onError: (error) => {
-        // 回滾
-        setSaved(saved);
+      onError: (error, variables, context) => {
+        // 回滾到原本的狀態
+        if (context?.previousSaved !== undefined) {
+          setSaved(context.previousSaved);
+        }
         toast.error(error.message || '操作失敗，請稍後再試');
       }
     }
