@@ -67,28 +67,40 @@ function connectSocket(token) {
   });
 }
 
-// Helper: Create notification via API
+// Helper: Create notification via API (needs second user to comment)
 async function createTestNotification(recipientId, token) {
   try {
-    // Create via comment notification (simpler than direct API)
+    const timestamp = Date.now();
+    
+    // Create post from first user
     const postRes = await axios.post(
       `${BASE_URL}/api/posts`,
       {
-        title: 'Test Post for Socket',
-        content: 'Test content',
-        type: 'general'
+        title: `Test Post for Socket ${timestamp}`,
+        content: 'Test content for socket notification testing. This is a test post created to trigger notifications.',
+        type: 'general',
+        category: 'general-discussion'
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // Comment on post to trigger notification
+    // Create second user to comment (to trigger notification)
+    const commenter = await axios.post(`${BASE_URL}/api/auth/register`, {
+      username: `commenter${timestamp}`,
+      email: `commenter_${timestamp}@test.com`,
+      password: 'TestPass123!',
+      firstName: 'Commenter',
+      lastName: 'Test'
+    });
+
+    // Comment from second user to trigger notification to first user
     await axios.post(
       `${BASE_URL}/api/comments`,
       {
-        postId: postRes.data.data._id,
+        post: postRes.data.data._id,
         content: 'Test comment to trigger notification'
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${commenter.data.token}` } }
     );
 
     return true;
@@ -145,26 +157,35 @@ async function testReconnection() {
   
   return new Promise((resolve) => {
     let reconnected = false;
+    let wasDisconnected = false;
 
-    socket.on('reconnect', (attemptNumber) => {
-      console.log(` Socket reconnected after ${attemptNumber} attempts`);
-      reconnected = true;
-      console.log(' PASS: Reconnection successful');
-      resolve(true);
-    });
+    // Listen for connection after disconnect
+    const onConnect = () => {
+      if (wasDisconnected) {
+        console.log(' Socket reconnected successfully');
+        reconnected = true;
+        socket.off('connect', onConnect);
+        console.log(' PASS: Reconnection successful');
+        resolve(true);
+      }
+    };
+
+    socket.on('connect', onConnect);
 
     // Manually disconnect
     console.log(' Disconnecting socket...');
     socket.disconnect();
+    wasDisconnected = true;
     
     // Wait a moment then reconnect
     setTimeout(() => {
       console.log(' Reconnecting socket...');
       socket.connect();
-    }, 2000);
+    }, 1000);
 
     // Timeout after 10 seconds
     setTimeout(() => {
+      socket.off('connect', onConnect);
       if (!reconnected) {
         console.error(' FAIL: Socket did not reconnect within 10 seconds');
         resolve(false);
