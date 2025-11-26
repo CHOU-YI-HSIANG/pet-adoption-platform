@@ -207,7 +207,7 @@ router.get('/', async (req, res) => {
     const totalPages = Math.ceil(total / limit);
 
     // 回傳扁平的結構以符合整合測試 (posts: [...])
-    res.json({
+    const payload = {
       posts: postsWithStatus,
       pagination: {
         page: currentPage,
@@ -217,7 +217,12 @@ router.get('/', async (req, res) => {
         hasPrevPage: currentPage > 1,
         hasNextPage: currentPage < totalPages
       }
-    });
+    };
+
+    // 提供兩種回傳風格以兼容不同前端實作：
+    // - 舊格式: { posts, pagination }
+    // - 新格式: { success: true, data: { posts, pagination } }
+    res.json(Object.assign({ success: true, data: payload }, payload));
   } catch (error) {
     console.error('獲取文章列表錯誤:', error);
     res.status(500).json({

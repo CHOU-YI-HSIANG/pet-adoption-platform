@@ -1,0 +1,83 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration:
+    name: Run integration tests
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" \
+          --health-interval=10s --health-timeout=5s --health-retries=5
+    env:
+      MONGODB_URI: mongodb://localhost:27017/pet_adoption_test
+      READINESS_RETRIES: 60
+      READINESS_DELAY_MS: 2000
+      DB_CONNECT_MAX_RETRIES: 60
+      DB_CONNECT_DELAY_MS: 2000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          nohup npm run dev > server.log 2>&1 &
+          echo "started server, PID: $!"
+
+      - name: Seed database (ensure test data)
+        working-directory: backend
+        run: |
+          # if you have a seed script, run it; otherwise run seed.js directly
+          if [ -f package.json ] && grep -q "\"seed\"" package.json; then
+            npm run seed || node seed.js || true
+          else
+            node seed.js || true
+          fi
+
+      - name: Wait for readiness
+        run: |
+          set -e
+          echo "Waiting for /api/ready..."
+          for i in $(seq 1 $READINESS_RETRIES); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/ready || true)
+            echo "attempt $i -> status=$status"
+            if [ "$status" = "200" ]; then
+              echo "readiness ok"
+              break
+            fi
+            sleep $(expr $READINESS_DELAY_MS / 1000)
+          done
+          # show health endpoint for debugging
+          curl -s http://localhost:5000/api/health || true
+
+      - name: Run integration tests
+        working-directory: backend
+        run: |
+          node test-integration-verbose.js
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log
+          path: backend/server.log
