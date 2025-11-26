@@ -33,6 +33,14 @@
   - p99: 1939ms ⚠️ (極端邊緣案例)
 - 測試階段: Warm-up → Load → Stress → Cooldown
 
+### 單元測試 (Jest)
+- 總測試數: 21
+- 通過: 21
+- 失敗: 0
+- 成功率: 100%
+- 測試文件: `tests/daysInShelter.test.js`
+- 測試範圍: 日期計算邏輯（在收容所天數）
+
 ### 執行環境
 - 最新執行日期: 2025-11-26
 - 執行環境: 本地開發環境 (Windows) + GitHub Actions CI
