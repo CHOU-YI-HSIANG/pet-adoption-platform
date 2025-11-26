@@ -20,11 +20,14 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // Helper: Setup test user and get auth token
 async function setupTestUser() {
   try {
-    // Create test user
+    // Create test user with all required fields
+    const timestamp = Date.now();
     const registerRes = await axios.post(`${BASE_URL}/api/auth/register`, {
-      name: 'Socket Test User',
-      email: `sockettest_${Date.now()}@test.com`,
-      password: 'TestPass123!'
+      username: `sockettest${timestamp}`,
+      email: `sockettest_${timestamp}@test.com`,
+      password: 'TestPass123!',
+      firstName: 'Socket',
+      lastName: 'Test'
     });
     
     testUserId = registerRes.data.user._id;
