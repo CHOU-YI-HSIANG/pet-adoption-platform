@@ -1,0 +1,131 @@
+﻿# Artillery Load Test Configuration for Notification System
+# Tests API endpoints and Socket.IO under load
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    # Phase 1: Warm-up - 漸進增加負載
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm-up - 10 users/sec"
+    # Phase 2: Load test - 持續負載
+    - duration: 120
+      arrivalRate: 50
+      name: "Load test - 50 users/sec"
+    # Phase 3: Stress test - 高負載
+    - duration: 60
+      arrivalRate: 100
+      name: "Stress test - 100 users/sec"
+    # Phase 4: Cooldown
+    - duration: 30
+      arrivalRate: 10
+      name: "Cooldown - 10 users/sec"
+  
+  # 效能閾值 (根據 Quality Gate 需求)
+  ensure:
+    maxErrorRate: 1  # 失敗率 < 1%
+    p95: 200        # 95% 請求 < 200ms
+    p99: 500        # 99% 請求 < 500ms
+
+  # HTTP 設定
+  http:
+    timeout: 10
+    pool: 50
+
+  # 變數定義
+  variables:
+    testEmail: "loadtest{{ $randomNumber(1, 10000) }}@example.com"
+    testPassword: "LoadTest123!"
+
+scenarios:
+  # Scenario 1: 查詢未讀通知數量 (最頻繁的操作)
+  - name: "Get Unread Notification Count"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testEmail }}"
+            password: "{{ testPassword }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/notifications/unread-count"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "count"
+
+  # Scenario 2: 獲取通知列表
+  - name: "Get Notification List"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testEmail }}"
+            password: "{{ testPassword }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/notifications?page=1&limit=20"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  # Scenario 3: 標記通知為已讀
+  - name: "Mark Notification as Read"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testEmail }}"
+            password: "{{ testPassword }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/notifications?page=1&limit=1"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.data.notifications[0]._id"
+              as: "notificationId"
+      - post:
+          url: "/api/notifications/{{ notificationId }}/read"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Scenario 4: 創建觸發通知的操作 (留言)
+  - name: "Create Notification via Comment"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testEmail }}"
+            password: "{{ testPassword }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/posts?page=1&limit=1"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.posts[0]._id"
+              as: "postId"
+      - post:
+          url: "/api/comments"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            postId: "{{ postId }}"
+            content: "Load test comment {{ $randomString(10) }}"
