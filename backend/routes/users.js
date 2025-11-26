@@ -529,7 +529,7 @@ router.post('/saved-posts/:postId', authenticateToken, async (req, res) => {
       user.collections = user.collections.filter(id => id.toString() !== postIdStr);
     } else {
       // 新增收藏（確保存入 ObjectId）
-      user.collections.push(require('mongoose').Types.ObjectId(postId));
+      user.collections.push(new require('mongoose').Types.ObjectId(postId));
     }
 
     await user.save();
@@ -678,7 +678,7 @@ router.post('/favorites/:petId', authenticateToken, async (req, res) => {
       user.favorites = user.favorites.filter(id => id.toString() !== petIdStr);
     } else {
       // 加入收藏（確保存入 ObjectId）
-      user.favorites.push(require('mongoose').Types.ObjectId(petId));
+      user.favorites.push(new require('mongoose').Types.ObjectId(petId));
     }
 
     await user.save();

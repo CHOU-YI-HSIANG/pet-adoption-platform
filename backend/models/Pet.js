@@ -455,7 +455,7 @@ petSchema.methods.toggleLike = function(userId) {
   if (likeIndex > -1) {
     this.likes.splice(likeIndex, 1);
   } else {
-    this.likes.push(mongoose.Types.ObjectId(userId));
+    this.likes.push(new mongoose.Types.ObjectId(userId));
   }
 
   return this.save();
