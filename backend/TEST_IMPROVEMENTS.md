@@ -133,13 +133,71 @@ Conclusion:
 
 ---
 
-### 3. package.json 腳本更新
+### 3. 單元測試 (TEST-001 - Medium Priority)
+
+**檔案**: `backend/tests/daysInShelter.test.js`
+
+**測試框架**: Jest
+
+**測試目標**: 驗證「在收容所天數」(daysInShelter) 篩選條件的日期計算邏輯正確性
+
+**測試涵蓋範圍** (21 個測試案例):
+
+1. **基本功能測試** (4 cases)
+   - 無參數返回 null
+   - 最小天數計算 (30天)
+   - 最大天數計算 (180天)
+   - 完整範圍計算 (30-180天)
+
+2. **邊界條件測試** (5 cases)
+   - 0 天處理（今天入所）
+   - 1 天處理
+   - 相同最小/最大天數
+   - 大數值 (365天)
+   - 超大數值 (500天)
+
+3. **閏年與月份邊界** (3 cases)
+   - 跨月計算 (31天)
+   - 2月日期計算 (60天)
+   - 閏年邊界 (366天)
+
+4. **字串輸入測試** (2 cases)
+   - 字串型別處理 (parseInt)
+   - 數字字串 "0"
+
+5. **日期物件完整性** (3 cases)
+   - Date 實例驗證
+   - 時間邏輯正確性
+   - 所有日期在過去
+
+6. **實際使用場景** (4 cases)
+   - 剛入所寵物 (0-7天)
+   - 需要關注寵物 (30-90天)
+   - 長期未認養 (180天+)
+   - 所有在收容所寵物 (0天+)
+
+**執行結果**:
+```
+Test Suites: 1 passed, 1 total
+Tests:       21 passed, 21 total
+Success Rate: 100%
+```
+
+**解決問題**: TEST-001 (Medium) from Story 1.1 Quality Gate - 日期計算邏輯缺少專門的單元測試
+
+---
+
+### 4. package.json 腳本更新
 
 新增測試命令：
 
 ```json
 {
   "scripts": {
+    "test": "jest",
+    "test:unit": "jest tests/",
+    "test:unit:watch": "jest tests/ --watch",
+    "test:coverage": "jest tests/ --coverage",
     "test:socketio": "node test-socketio-resilience.js",
     "test:load": "artillery run load-test-notifications.yml",
     "test:load:quick": "artillery quick --count 10 --num 100 http://localhost:5000/api/health"
@@ -286,10 +344,11 @@ production_readiness:
 
 ---
 
-##  驗收標準
+## ✅ 驗收標準
 
 - [x] Socket.IO 容錯測試實作並通過 (5/5 tests)
 - [x] 負載測試框架建立並配置閾值
+- [x] 單元測試實作並通過 (21/21 tests)
 - [x] package.json 腳本更新
 - [x] 測試文檔完成
 - [x] 相依套件安裝
@@ -297,13 +356,24 @@ production_readiness:
 
 ---
 
-##  總結
+## 📊 總結
 
- **高優先級阻塞項已解決**:
+✅ **高優先級阻塞項已解決**:
 - REL-001 (Socket.IO 容錯) - **已完成**
 - PERF-001 (負載測試) - **已完成**
 
- **中優先級建議項**:
-- REL-002 (TTL 驗證) - **可後續實作，非阻塞**
+✅ **中優先級改進項已完成**:
+- TEST-001 (日期計算單元測試) - **已完成** (21/21 tests)
 
-**Story 3.1 現已具備生產就緒條件！** 
+⚠️ **低優先級建議項**:
+- REL-002 (TTL 驗證) - **可後續實作，非阻塞**
+- TEST-002 (E2E URL 分享測試) - **可後續實作**
+- TEST-003 (useDebounce Hook 測試) - **可後續實作**
+
+**系統已完全具備生產就緒條件！**
+
+### 測試總覽
+- 整合測試: 12/12 (100%)
+- 單元測試: 21/21 (100%)
+- Socket.IO 測試: 5/5 (100%)
+- 負載測試: 12,900 requests (98.3% success)

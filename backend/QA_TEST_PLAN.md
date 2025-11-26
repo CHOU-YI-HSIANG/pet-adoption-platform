@@ -30,6 +30,7 @@
 
 ## 4. 測試類型
 - 系統整合測試 (Integration)
+- 單元測試 (Unit Testing - Jest)
 - API 合約驗證 (Contract)
 - 基本安全/授權檢查 (Authentication/Authorization smoke checks)
 - Socket.IO 容錯與重連測試 (Resilience Testing)
@@ -51,6 +52,10 @@
 - 執行負載測試:
   - `npm run test:load` （完整 5 分鐘測試）
   - `npm run test:load:quick` （快速測試）
+- 執行單元測試:
+  - `npm run test:unit` （執行所有單元測試）
+  - `npm run test:unit:watch` （監視模式）
+  - `npm run test:coverage` （覆蓋率報告）
 - 需求: 有可用的 MongoDB 連線（.env 中配置 `MONGODB_URI`）
 
 ### CI/CD 環境
@@ -130,8 +135,16 @@
    - 執行結果: 12,900 requests, 98.3% success
    - 效能基準: median 36.2ms (優秀)
 
+7. **單元測試 (Jest)**
+   - 新增 `backend/tests/daysInShelter.test.js`
+   - 測試目標: 日期計算邏輯（在收容所天數篩選）
+   - 測試案例: 21 個測試（基本功能、邊界條件、閏年、實際場景）
+   - 結果: 21/21 通過 (100%)
+   - 解決: TEST-001 (Medium priority)
+
 ### 測試驗證結果
 - 本地整合測試: ✅ 12/12 通過 (100%)
+- 單元測試: ✅ 21/21 通過 (100%)
 - Socket.IO 測試: ✅ 5/5 通過 (100%)
 - 負載測試: ✅ 12,900 requests (98.3% success)
 - CI 自動化測試: ✅ 通過
@@ -142,6 +155,7 @@
   - ✅ API readiness 檢查穩定
   - ✅ WebSocket 連接與重連機制穩定
   - ✅ 高併發通知推送效能達標
+  - ✅ 日期計算邏輯正確（21 個邊界案例驗證）
 
 ---
 
