@@ -561,6 +561,7 @@ router.delete('/:id', auth, async (req, res) => {
 
     // 軟刪除
     post.status = 'deleted';
+    post.deletedAt = new Date();
     await post.save();
 
     res.json({

@@ -203,6 +203,7 @@ const ShelterDashboardPage = () => {
         <ApplicationManagementTab
           overview={overview}
           applications={applications || []}
+          navigate={navigate}
           onViewDetails={(id) => {
             setSelectedApplicationId(id);
             setIsModalOpen(true);
@@ -226,7 +227,7 @@ const ShelterDashboardPage = () => {
 };
 
 // Tab 1: 申請管理
-const ApplicationManagementTab = ({ overview, applications, onViewDetails }) => {
+const ApplicationManagementTab = ({ overview, applications, navigate, onViewDetails }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -260,14 +261,18 @@ const ApplicationManagementTab = ({ overview, applications, onViewDetails }) => 
       value: pendingCount,
       icon: Clock,
       color: 'bg-yellow-500',
-      textColor: 'text-yellow-600'
+      textColor: 'text-yellow-600',
+      clickable: true,
+      onClick: () => navigate('/my-pets-applications?filter=pending')
     },
     {
       title: '本月申請數',
       value: monthApplications,
       icon: TrendingUp,
       color: 'bg-blue-500',
-      textColor: 'text-blue-600'
+      textColor: 'text-blue-600',
+      clickable: true,
+      onClick: () => navigate('/my-pets-applications?filter=all')
     },
     {
       title: '核准率',
@@ -290,7 +295,8 @@ const ApplicationManagementTab = ({ overview, applications, onViewDetails }) => 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow p-4"
+              className={`bg-white rounded-lg shadow p-4 ${card.clickable ? 'cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200' : ''}`}
+              onClick={card.onClick || undefined}
             >
               <div className="flex items-center justify-between">
                 <div>

@@ -10,7 +10,15 @@ const MyPetsApplicationsPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [filter, setFilter] = useState('all');
+  const location = useLocation();
+  
+  // 從 URL 參數讀取初始篩選條件
+  const initialFilter = React.useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('filter') || 'all';
+  }, [location.search]);
+  
+  const [filter, setFilter] = useState(initialFilter);
 
   // 此頁面應顯示「我發布的寵物收到的申請」；即便是 admin 帳號也只看自己發布的寵物
   const apiEndpoint = '/api/adoptions/my-pets-applications';
@@ -85,7 +93,6 @@ const MyPetsApplicationsPage = () => {
 
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     if (!location) return;

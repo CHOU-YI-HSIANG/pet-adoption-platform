@@ -106,6 +106,10 @@ const postSchema = new mongoose.Schema({
   publishedAt: {
     type: Date
   },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
   
   // Story 2.3: 走失寵物資訊
   lostPetInfo: {
