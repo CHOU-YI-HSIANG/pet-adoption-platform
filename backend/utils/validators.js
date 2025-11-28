@@ -361,6 +361,25 @@ const adoptionCreateSchema = Joi.object({
     emergencyContactPhone: Joi.string().optional().allow('')
   }).optional(),
 
+  // 聯絡資訊
+  contactInfo: Joi.object({
+    phone: Joi.string()
+      .pattern(/^09\d{8}$/)
+      .optional()
+      .messages({
+        'string.pattern.base': '手機號碼格式不正確 (例: 0912345678)'
+      }),
+    email: Joi.string().email().optional().allow(''),
+    preferredContactMethod: Joi.string().valid('phone', 'email', 'both').optional()
+  }).optional(),
+
+  // 居住環境
+  livingEnvironment: Joi.object({
+    type: Joi.string().valid('apartment', 'house', 'condo', 'other').optional(),
+    hasYard: Joi.boolean().optional(),
+    familyMembers: Joi.number().integer().min(0).optional()
+  }).optional(),
+
   // 兼容舊欄位（top-level）
   age: Joi.alternatives().try(Joi.number().integer().min(0), Joi.string()).optional(),
   occupation: Joi.string().optional().allow(''),
