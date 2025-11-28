@@ -825,7 +825,33 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// 取得特色寵物
+// 取得特色寵物 (前端使用此端點)
+router.get('/featured', async (req, res) => {
+  try {
+    const { limit = 6 } = req.query;
+
+    const featuredPets = await Pet.find({
+      featured: true,
+      adoptionStatus: 'available',
+      isActive: true
+    })
+    .populate('createdBy', 'username firstName lastName')
+    .sort({ createdAt: -1 })
+    .limit(parseInt(limit))
+    .lean();
+
+    res.json(featuredPets);
+
+  } catch (error) {
+    console.error('取得特色寵物錯誤:', error);
+    res.status(500).json({
+      error: '無法取得特色寵物',
+      details: error.message
+    });
+  }
+});
+
+// 取得特色寵物列表 (舊端點保留相容性)
 router.get('/featured/list', async (req, res) => {
   try {
     const { limit = 6 } = req.query;
