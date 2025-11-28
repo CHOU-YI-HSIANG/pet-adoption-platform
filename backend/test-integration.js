@@ -30,10 +30,11 @@ async function testEpic1() {
     logTest('Story 1.1: 進階篩選 API', petsResponse.status === 200 && Array.isArray(petsResponse.data.pets));
     
     try {
-      await axios.get(`${BASE_URL}/recommendations`);
-      logTest('Story 1.2: 個人化推薦端點', false);
+      const recsResponse = await axios.get(`${BASE_URL}/recommendations`);
+      // 修復: 端點現在支援訪客訪問 (返回熱門寵物)
+      logTest('Story 1.2: 個人化推薦端點', recsResponse.status === 200 && Array.isArray(recsResponse.data.recommendations));
     } catch (err) {
-      logTest('Story 1.2: 個人化推薦端點存在', err.response?.status === 401 || err.response?.status === 403);
+      logTest('Story 1.2: 個人化推薦端點', false, err.message);
     }
     
     if (petsResponse.data.pets.length > 0) {
