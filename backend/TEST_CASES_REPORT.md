@@ -311,11 +311,157 @@
 
 ---
 
-## 最新執行結果 (2025-11-26)
+## 最新執行結果 (2025-11-29)
 
 ### 執行環境
 - 本地: Windows + Node.js + MongoDB
 - CI: GitHub Actions (ubuntu-latest + mongo:5.0 service)
+
+### 測試摘要
+- **單元測試**: 50/50 通過 ✅
+- **API 端點修復**: 全部完成 ✅
+- **軟刪除功能**: 測試通過 ✅
+- **儀表板導航**: 手動測試通過 ✅
+- **F12 控制台**: 無錯誤 ✅
+
+### 修復與改進項目
+
+#### 1. 手機號碼驗證修復 (2025-11-29)
+- **問題**: `validation.test.js` 中「應該拒絕無效的手機號碼」測試失敗
+- **原因**: `adoptionCreateSchema` 缺少 `contactInfo` 和 `livingEnvironment` 欄位驗證
+- **修復**: 在 `backend/utils/validators.js` 中新增:
+  ```javascript
+  contactInfo: Joi.object({
+    phone: Joi.string().pattern(/^09\d{8}$/).optional()
+      .messages({ 'string.pattern.base': '手機號碼格式不正確 (例: 0912345678)' }),
+    email: Joi.string().email().optional().allow(''),
+    preferredContactMethod: Joi.string().valid('phone', 'email', 'both').optional()
+  }).optional()
+  ```
+- **結果**: 所有測試通過 (50/50) ✅
+- **Commit**: `dcd0d18`
+
+#### 2. API 端點修復 (2025-11-29)
+- **問題**: 儀表板 API 呼叫返回 400/404/500 錯誤
+- **修復項目**:
+  1. **petQuerySchema 參數**: 新增 `createdBy` 和 `showAll` 參數支援
+     - Commit: `dd8b0ad`
+  2. **Featured Pets 端點**: 新增 `/api/pets/featured` 端點
+     - 前端呼叫 `/api/pets/featured`，但後端只有 `/featured/list`
+     - 解決方案: 新增 `/featured` 端點，保留 `/featured/list` 相容性
+     - Commit: `009ee6b`
+  3. **Recommendations 端點**: 修改為選擇性認證
+     - 原本需要登入才能呼叫，導致首頁訪客無法使用
+     - 解決方案: 未登入時返回熱門寵物，已登入時返回個人化推薦
+     - Commit: `009ee6b`
+- **結果**: 所有 API 端點正常運作 ✅
+
+#### 3. 前端靜態資源修復 (2025-11-29)
+- **問題**: `manifest.json` 和 `favicon.ico` 404 錯誤
+- **修復**:
+  1. 建立 `frontend/public/manifest.json` (PWA 配置)
+  2. 建立 `frontend/public/favicon.ico` (網站圖示)
+  3. 修正 manifest.json 語法錯誤（移除跳脫字元）
+- **結果**: F12 控制台無錯誤 ✅
+- **Commits**: `10305ee`, `46e6997`
+
+#### 4. 軟刪除功能測試 (2025-11-29)
+- **測試項目**:
+  - 建立測試貼文
+  - 執行軟刪除（設定 `status='deleted'` 和 `deletedAt`）
+  - 驗證貼文仍存在資料庫中
+  - 測試清理腳本 dry-run 模式
+- **測試結果**:
+  - ✅ 成功建立測試貼文 (ID: 6929ed74633a34304ba3059d, 6929ed60e7322c017f95dd15)
+  - ✅ 軟刪除機制正常運作
+  - ✅ 資料庫中共有 2 篇軟刪除貼文
+  - ✅ 清理腳本正常執行（dry-run 測試）
+- **結論**: 軟刪除功能完全正常 ✅
+
+#### 5. 儀表板導航測試 (2025-11-29)
+- **測試項目**:
+  - 可點擊的統計卡片（「待審核申請」、「本月申請數」）
+  - URL 參數過濾 (`?filter=pending`, `?filter=all`)
+  - 懸停效果和視覺回饋
+- **測試結果**: 使用者手動測試確認所有功能正常 ✅
+
+### 單元測試結果 (2025-11-29)
+
+```
+PASS tests/daysInShelter.test.js
+PASS tests/logging.test.js
+PASS tests/google-auth.test.js
+PASS tests/validation.test.js
+
+Test Suites: 4 passed, 4 total
+Tests:       50 passed, 50 total
+Snapshots:   0 total
+Time:        3.517 s
+```
+
+**測試涵蓋範圍**:
+- ✅ 日期計算邏輯 (daysInShelter)
+- ✅ 日誌系統 (Winston + Morgan)
+- ✅ Google OAuth 認證
+- ✅ 輸入驗證 (Joi schemas)
+  - 使用者註冊/登入
+  - 寵物建立/查詢
+  - 領養申請（包含手機號碼驗證）
+  - 貼文建立
+  - 留言建立
+
+### F12 控制台檢查 (2025-11-29)
+**檢查結果**: ✅ 無錯誤
+
+修復前的錯誤:
+- ❌ `/api/pets/featured` 500 Internal Server Error
+- ❌ `/api/recommendations` 404 Not Found  
+- ❌ `/api/pets?createdBy=...&showAll=true` 400 Bad Request
+- ❌ `manifest.json` 404 Not Found
+- ❌ `manifest.json` Syntax Error (Line 2, column 3)
+- ❌ `favicon.ico` 404 Not Found
+
+修復後:
+- ✅ 所有 API 端點正常回應
+- ✅ 靜態資源完整
+- ✅ 無 JavaScript 錯誤
+- ✅ 無網路請求錯誤
+
+### Git 提交記錄 (2025-11-29)
+1. **dcd0d18** - fix: 修復領養申請手機號碼驗證問題
+2. **dd8b0ad** - fix: 新增 petQuerySchema 缺少的 createdBy 和 showAll 參數
+3. **009ee6b** - fix: 修復 API 端點問題
+4. **10305ee** - fix: 新增缺少的前端靜態資源
+5. **46e6997** - fix: 修復 manifest.json 語法錯誤
+
+所有修復已推送至 GitHub: `https://github.com/CHOU-YI-HSIANG/pet-adoption-platform`
+
+### 生產環境準備度評估 (2025-11-29)
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 單元測試 | ✅ 通過 | 50/50 測試全部通過 |
+| API 端點 | ✅ 正常 | 所有端點可用且正確回應 |
+| 前端建置 | ✅ 成功 | 無編譯錯誤 |
+| 輸入驗證 | ✅ 完整 | 所有 schema 驗證正常 |
+| 軟刪除功能 | ✅ 運作 | 測試通過，清理腳本可用 |
+| 儀表板功能 | ✅ 正常 | 導航和篩選功能正常 |
+| 錯誤處理 | ✅ 完善 | F12 無錯誤訊息 |
+| 程式碼品質 | ✅ 良好 | 所有測試通過 |
+
+**結論**: ✅ 系統已準備好部署
+
+### 後續建議
+1. **監控與日誌**: 生產環境啟用結構化日誌監控
+2. **清理腳本排程**: 設定定期任務清理軟刪除資料
+   - Windows: 使用工作排程器
+   - Linux: cron job (`0 2 * * 0` - 每週日凌晨2點)
+3. **效能測試**: 如需要可執行 Artillery 負載測試
+4. **安全性檢查**: 定期執行 `npm audit` 檢查依賴漏洞
+
+---
+
+## 整合測試結果 (2025-11-26)
 
 ### 測試腳本輸出
 ```
