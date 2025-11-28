@@ -286,6 +286,10 @@ const petQuerySchema = Joi.object({
   daysInShelterMin: Joi.number().integer().min(0).optional(),
   daysInShelterMax: Joi.number().integer().min(0).optional(),
   
+  // Dashboard/Shelter 篩選
+  createdBy: objectIdSchema.optional(),
+  showAll: Joi.string().valid('true', 'false').optional(),
+  
   // 排序與分頁
   sortBy: Joi.string().valid('createdAt', 'age', 'name', 'intakeDate').optional(),
   sortOrder: Joi.string().valid('asc', 'desc').optional(),
