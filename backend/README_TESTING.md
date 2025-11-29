@@ -1,6 +1,8 @@
 # 測試說明
 
-此檔案包含在本地對此專案進行快速測試（smoke/integration/unit）的說明與指令。
+此檔案包含在本地對此專案進行快速測試（smoke/integration/unit/e2e/security）的說明與指令。
+
+**最新更新**: 2025-11-29 - 新增安全測試指令
 
 使用前提：
 - 確認 `backend/.env` 已正確設定（尤其 `MONGODB_URI`、`JWT_SECRET`）
@@ -28,13 +30,30 @@ cd backend
 node test-integration.js
 ```
 
-4) 後端自動化測試（若有 Jest 測試檔）：
+4) 後端自動化測試（單元測試）：
 ```powershell
 cd backend
-npm run test
+npm test              # 執行所有單元測試 (50 tests)
+npm run test:unit     # 同上
+npm run test:coverage # 產生覆蓋率報告
 ```
 
-5) 前端手動與 unit test：
+5) 安全性測試（2025-11-29 新增）：
+```powershell
+cd backend
+npm audit                        # 掃描依賴套件漏洞
+node test-security-fixes.js      # 驗證安全功能 (14 tests)
+```
+
+6) E2E 測試（前端）：
+```powershell
+cd frontend
+npm run test:e2e         # 執行 E2E 測試 (11 tests)
+npm run test:e2e:ui      # UI 模式
+npm run test:e2e:headed  # 有界面模式
+```
+
+7) 前端手動與 unit test：
 ```powershell
 cd frontend
 npm install
@@ -43,6 +62,18 @@ npm start   # 手動 UI 驗證
 # 或執行前端測試
 npm test
 ```
+
+## 完整測試統計（2025-11-29）
+
+| 測試類型 | 數量 | 狀態 | 說明 |
+|---------|------|------|------|
+| 整合測試 | 12/12 | ✅ | API 端點與整合 |
+| 單元測試 | 50/50 | ✅ | Jest 測試 |
+| E2E 測試 | 11/11 | ✅ | Playwright |
+| Socket.IO | 5/5 | ✅ | 容錯與重連 |
+| 負載測試 | 12,900 | ✅ | 98.3% 成功 |
+| 安全測試 | 21/21 | ✅ | 漏洞修復與功能驗證 |
+| **總計** | **73/73** | ✅ | **100% 通過** |
 
 常見問題及排查：
 - 若 `test-integration.js` 報錯 401/403：代表需要授權的 endpoint 回傳未授權；這是預期行為，代表 endpoint 存在但需 token。

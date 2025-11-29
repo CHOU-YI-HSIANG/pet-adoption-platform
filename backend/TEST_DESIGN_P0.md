@@ -1,8 +1,8 @@
-# 測試設計：P0 全套（Readiness / Core Pets / Favorites / Integration Regression）
+# 測試設計：P0 全套（Readiness / Core Pets / Favorites / Integration Regression / Security）
 
-版本：2025-11-26（更新）
+版本：2025-11-29（更新）
 
-目的：驗證系統在啟動後能穩定就緒（readiness）、核心寵物列表與詳情契約、我的收藏同步行為，並以整合回歸測試（verbose）確認整體行為。
+目的：驗證系統在啟動後能穩定就緒（readiness）、核心寵物列表與詳情契約、我的收藏同步行為、安全性修復功能，並以整合回歸測試（verbose）確認整體行為。
 
 重要說明：本設計偏重可複製的手動/自動化步驟（PowerShell / node / curl），可直接用於 QA 工具的 Test Case 欄位或 CI job。
 
@@ -29,6 +29,8 @@
 測試腳本與工具
 - 手動 / 快速檢查：`node -e "...axios get /api/ready"`（在 README 範例中）
 - 自動化：`backend/test-integration-verbose.js`（已新增）
+- 安全測試：`npm audit`（依賴漏洞掃描）
+- 安全功能測試：`node test-security-fixes.js`（驗證安全修復）
 
 ---
 
