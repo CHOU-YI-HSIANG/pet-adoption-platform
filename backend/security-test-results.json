@@ -1,0 +1,36 @@
+{
+  "multer": {
+    "status": " 通過",
+    "details": [
+      " 建立測試檔案成功",
+      " 檔案類型驗證邏輯存在",
+      " 檔案大小限制設定: 5MB",
+      " Multer 2.0.2 基本功能驗證完成"
+    ]
+  },
+  "nodemailer": {
+    "status": " 通過",
+    "details": [
+      " Nodemailer 版本: ^7.0.11",
+      " 郵件傳輸器建立成功",
+      " 郵件選項格式正確",
+      " API 方法 createTransport 可用",
+      " API 方法 createTestAccount 可用",
+      " Nodemailer 7.0.11 基本功能驗證完成"
+    ]
+  },
+  "validator": {
+    "status": " 通過",
+    "details": [
+      " Validator 版本: ^13.11.0",
+      " 有效的 HTTPS URL: \"https://www.example.com\" -> 有效",
+      " 有效的 HTTP URL: \"http://example.com\" -> 有效",
+      " 有效的 FTP URL: \"ftp://files.example.com\" -> 有效",
+      " 惡意 JavaScript URL: \"javascript:alert(1)\" -> 無效",
+      " 惡意 Data URL: \"data:text/html,<script>alert(1)</script>\" -> 無效",
+      " 無效的 URL: \"not-a-url\" -> 無效",
+      " 空字串: \"\" -> 無效",
+      " 所有 7 個測試通過"
+    ]
+  }
+}
