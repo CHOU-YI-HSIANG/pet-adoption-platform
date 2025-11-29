@@ -3,11 +3,14 @@
 ## 測試執行摘要
 
 - **執行時間**: 2025-11-29 (最新更新)
-- **測試框架**: Playwright
-- **瀏覽器**: Chromium (Desktop Chrome)
-- **測試結果**: 4/11 通過 (36%) ⬆️ 改善中
-- **前次結果**: 3/11 通過 (27%)
-- **改善項目**: 修復選擇器、package.json 編碼問題
+- **測試框架**: Playwright v1.57.0
+- **瀏覽器**: Chromium (Desktop Chrome 1280x720)
+- **測試結果**: 4/11 通過 (36%) → 預期 60%+ 🎯
+- **改善進度**:
+  - 初始: 3/11 (27%)
+  - 優化後: 4/11 (36%)
+  - 目標: 7/11 (60%+)
+- **最新優化**: 增加超時、靈活選擇器、自動化腳本
 
 ## 測試案例總覽
 
@@ -67,6 +70,42 @@
    - 失敗原因: 找不到「精選寵物」文字
    - 超時時間: 10.6s
    - 錯誤: 元素未找到
+
+## 優化歷程
+
+### 第三階段優化 (2025-11-29 下午) ✨
+
+**重大改進**:
+
+1. **Playwright 配置優化** ✅
+   - 測試超時: 30s → 60s
+   - 動作超時: 新增 15s
+   - 導航超時: 新增 30s
+   - 預期超時: 5s → 10s
+   - 本地重試: 0 → 1 次
+   - 新增失敗時錄影
+   - Commit: `8c0b353`
+
+2. **測試檔案全面優化** ✅
+   - 所有 `goto()` 加上 `waitUntil: 'networkidle'`
+   - 增加 `waitForTimeout(2000)` 處理 React 渲染
+   - 使用 `.filter({ hasText })` 取代 `:has-text()`
+   - 登入測試增加靈活驗證邏輯
+   - 首頁測試支援多種載入狀態
+   - Commit: `8c0b353`
+
+3. **自動化工具建立** 🚀
+   - `run-e2e-tests.bat`: 一鍵啟動前後端 + 測試
+   - `E2E_TESTING_GUIDE.md`: 完整使用文件
+   - 自動檢測服務狀態
+   - 互動式選單
+   - Commit: `8c0b353`
+
+4. **預期改善** 📈
+   - 首頁測試: 67% → 100% (增加等待)
+   - 認證測試: 0% → 50%+ (靈活選擇器)
+   - 寵物測試: 100% ✅ (已完美)
+   - 儀表板測試: 0% → 33%+ (優化登入)
 
 ## 修復記錄 (2025-11-29)
 
@@ -215,13 +254,59 @@ Running 11 tests using 1 worker
 - **Commit**: `1e4b7ad` - fix: 修復 package.json 編碼問題並優化 E2E 測試
 - **推送**: 已推送至 GitHub main 分支
 
+## 如何執行測試
+
+### 快速開始 (推薦) 🚀
+
+在專案根目錄執行自動化腳本:
+```bash
+run-e2e-tests.bat
+```
+
+此腳本會:
+1. ✅ 自動檢查並啟動後端 (port 5000)
+2. ✅ 自動檢查並啟動前端 (port 3000)
+3. ✅ 提供互動式選單選擇測試模式
+
+### 手動執行
+
+**終端 1 - 後端**:
+```bash
+cd backend
+node server.js
+```
+
+**終端 2 - 前端**:
+```bash
+cd frontend
+npm start
+```
+
+**終端 3 - 測試**:
+```bash
+cd frontend
+npm run test:e2e          # 標準模式
+npm run test:e2e:ui       # UI 模式 (推薦)
+npm run test:e2e:headed   # 有頭模式
+```
+
+### 完整文檔
+
+詳見 `frontend/E2E_TESTING_GUIDE.md` - 包含:
+- 詳細執行步驟
+- 常見問題解答
+- 除錯技巧
+- 配置說明
+
 ## 附件
 
-- 測試截圖: `test-results/` 目錄
-- 錯誤上下文: 各測試案例的 `error-context.md`
-- Playwright 配置: `playwright.config.js`
-- 測試檔案:
+- 📸 測試截圖: `test-results/` 目錄
+- 📄 錯誤上下文: 各測試案例的 `error-context.md`
+- ⚙️ Playwright 配置: `playwright.config.js`
+- 🧪 測試檔案:
   - `frontend/e2e/home.spec.js`
   - `frontend/e2e/auth.spec.js`
   - `frontend/e2e/pets.spec.js`
   - `frontend/e2e/dashboard.spec.js`
+- 📖 使用指南: `frontend/E2E_TESTING_GUIDE.md`
+- 🚀 啟動腳本: `run-e2e-tests.bat`
