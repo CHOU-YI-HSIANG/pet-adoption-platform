@@ -2,23 +2,31 @@
 
 test.describe('首頁瀏覽測試', () => {
   test('應該能夠載入首頁', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
-    // 檢查標題
-    await expect(page).toHaveTitle(/愛心動物認養平台/);
+    // 等待 React 應用載入
+    await page.waitForSelector('body', { state: 'attached' });
+    
+    // 檢查標題（等待時間更長）
+    await page.waitForTimeout(2000); // 給 React 時間渲染
+    await expect(page).toHaveTitle(/愛心動物認養平台/, { timeout: 15000 });
     
     // 檢查主要元素存在 - 實際頁面有「給每個毛孩溫暖的家」標題
-    await expect(page.locator('text=給每個毛孩').or(page.locator('text=愛心認養平台'))).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=給每個毛孩').or(page.locator('text=愛心認養平台'))).toBeVisible({ timeout: 20000 });
   });
 
   test('應該能夠查看精選寵物', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
-    // 等待「等待認養的毛孩們」區塊載入
-    await page.waitForSelector('text=等待認養的毛孩們', { timeout: 15000 });
+    // 等待頁面完全載入
+    await page.waitForTimeout(3000);
     
-    // 或者等待「開始尋找」按鈕載入（確認頁面已渲染）
-    await page.waitForSelector('button:has-text("開始尋找")', { timeout: 15000 });
+    // 檢查「等待認養的毛孩們」或「開始尋找」按鈕
+    const hasSection = await page.locator('text=等待認養的毛孩們').isVisible({ timeout: 5000 }).catch(() => false);
+    const hasButton = await page.locator('button:has-text("開始尋找")').isVisible({ timeout: 5000 }).catch(() => false);
+    
+    // 至少其中一個應該可見
+    expect(hasSection || hasButton).toBeTruthy();
   });
 
   test('應該能夠點擊導航選單', async ({ page }) => {

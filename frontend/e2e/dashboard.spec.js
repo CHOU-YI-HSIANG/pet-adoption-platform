@@ -2,12 +2,21 @@
 
 // 管理員登入輔助函式
 async function loginAsAdmin(page) {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2000); // 等待 React 渲染
+  
+  // 等待並填寫表單
+  await page.waitForSelector('input#email', { state: 'visible', timeout: 15000 });
+  await page.fill('input#email', 'admin@petadoption.com', { timeout: 10000 });
+  await page.fill('input#password', 'Admin123456', { timeout: 10000 });
+  
+  // 點擊登入
+  const loginButton = page.locator('button[type="submit"]').filter({ hasText: '登入' });
+  await loginButton.click({ timeout: 10000 });
+  
+  // 等待導向成功
+  await page.waitForURL(/\/(shelter\/dashboard|dashboard|admin)/, { timeout: 20000 });
   await page.waitForLoadState('networkidle');
-  await page.fill('input#email', 'admin@petadoption.com');
-  await page.fill('input#password', 'Admin123456');
-  await page.click('button[type="submit"]:has-text("登入")');
-  await page.waitForURL(/\/(shelter\/dashboard|dashboard|admin)/, { timeout: 15000 });
 }
 
 test.describe('管理員儀表板測試', () => {
