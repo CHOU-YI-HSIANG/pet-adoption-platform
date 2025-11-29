@@ -32,19 +32,19 @@ test.describe('寵物瀏覽測試', () => {
     await page.goto('/pets');
     
     // 等待寵物卡片載入
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // 嘗試點擊第一個寵物卡片
-    const firstPetCard = page.locator('[class*=\"card\"], [class*=\"Card\"], a[href*=\"/pets/\"]').first();
+    // 使用更精確的選擇器：找到第一個寵物詳情連結
+    const firstPetLink = page.locator('a[href*="/pets/"]').first();
     
-    if (await firstPetCard.isVisible({ timeout: 5000 })) {
-      await firstPetCard.click();
+    if (await firstPetLink.isVisible({ timeout: 5000 })) {
+      await firstPetLink.click();
       
       // 確認導向詳情頁
       await expect(page).toHaveURL(/\/pets\/[a-f0-9]+/, { timeout: 5000 });
       
-      // 確認詳情頁有內容
-      await expect(page.locator('text=認養').or(page.locator('text=申請'))).toBeVisible({ timeout: 5000 });
+      // 確認詳情頁有內容 - 使用 .first() 避免 strict mode
+      await expect(page.locator('text=認養').first().or(page.locator('text=申請').first())).toBeVisible({ timeout: 5000 });
     }
   });
 });
