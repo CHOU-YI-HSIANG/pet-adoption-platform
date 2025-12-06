@@ -59,6 +59,10 @@ const Layout = ({ children }) => {
     if (path === '/') {
       return location.pathname === '/';
     }
+    // 精確匹配路徑，避免 /pets 匹配到 /pets/create
+    if (path === '/pets') {
+      return location.pathname === '/pets' || location.pathname.startsWith('/pets?');
+    }
     return location.pathname.startsWith(path);
   };
 

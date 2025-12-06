@@ -31,9 +31,9 @@ const PostCard = ({ post, index = 0 }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden"
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden flex flex-col"
     >
-      <Link to={`/community/${post._id}`} className="block">
+      <Link to={`/community/${post._id}`} className="block flex-grow flex flex-col">
         {/* 貼文圖片 */}
         {post.images && post.images.length > 0 && (
           <div className="relative h-48 overflow-hidden">
@@ -52,7 +52,7 @@ const PostCard = ({ post, index = 0 }) => {
         )}
 
         {/* 貼文內容 */}
-        <div className="p-5">
+        <div className="p-5 flex-grow flex flex-col">
           {/* 作者資訊 */}
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
@@ -75,13 +75,14 @@ const PostCard = ({ post, index = 0 }) => {
           </h3>
 
           {/* 摘要 */}
-          <p className="text-gray-600 text-sm line-clamp-3 mb-4">
-            {post.excerpt || post.content?.substring(0, 100)}
-            {(post.excerpt?.length > 100 || post.content?.length > 100) && '...'}
-          </p>
+          <div className="flex-grow">
+            <p className="text-gray-600 text-sm line-clamp-3">
+              {post.excerpt || post.content?.substring(0, 150)}
+            </p>
+          </div>
 
           {/* 互動數據 */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between pt-3 border-t border-gray-200 mt-4">
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <LikeButton 
                 postId={post._id}

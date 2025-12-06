@@ -27,6 +27,11 @@ const PetsPage = () => {
   const [favorites, setFavorites] = useState([]);
   const queryClient = useQueryClient();
   
+  // 組件載入時滾動到頂部
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  
   // 從 URL 參數初始化篩選條件
   const getInitialFilters = () => {
     const params = {};

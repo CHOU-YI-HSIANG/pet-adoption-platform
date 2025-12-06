@@ -34,8 +34,7 @@ class RecommendationService {
       };
 
       const allPets = await Pet.find(query)
-        .populate('createdBy', 'username')
-        .lean();
+        .populate('createdBy', 'username');
 
       if (allPets.length === 0) {
         logger.info('推薦系統: 沒有可推薦的寵物');
@@ -44,12 +43,13 @@ class RecommendationService {
 
       // 計算每隻寵物的推薦分數
       const scoredPets = allPets.map(pet => {
+        const petObj = pet.toObject(); // 轉換為物件並包含 virtuals
         const scores = this.calculateScores(pet, user);
         const totalScore = this.calculateTotalScore(scores);
         const reasons = this.generateReasons(scores, user);
 
         return {
-          ...pet,
+          ...petObj,
           recommendationScore: totalScore,
           scoreBreakdown: scores,
           recommendationReasons: reasons
@@ -310,13 +310,15 @@ class RecommendationService {
       })
       .sort({ views: -1, 'likes.length': -1 })
       .limit(limit)
-      .populate('createdBy', 'username')
-      .lean();
+      .populate('createdBy', 'username');
 
-      return pets.map(pet => ({
-        ...pet,
-        recommendationReasons: ['熱門寵物']
-      }));
+      return pets.map(pet => {
+        const petObj = pet.toObject(); // 轉換為物件並包含 virtuals
+        return {
+          ...petObj,
+          recommendationReasons: ['熱門寵物']
+        };
+      });
 
     } catch (error) {
       logger.error('取得熱門寵物錯誤', { error: error.message });

@@ -25,7 +25,7 @@ const PetCard = ({ pet, className = '' }) => {
     >
       <div className="aspect-w-16 aspect-h-12 bg-gray-200">
         <img
-          src={pet.images?.[0] || '/placeholder-pet.png'}
+          src={pet.primaryPhoto?.url || pet.images?.[0] || '/placeholder-pet.png'}
           alt={pet.name}
           className="w-full h-48 object-cover"
         />

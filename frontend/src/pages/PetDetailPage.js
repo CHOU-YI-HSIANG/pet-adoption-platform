@@ -60,7 +60,7 @@ const PetDetailPage = () => {
     ['pet', id],
     () => petAPI.getPet(id),
     {
-      select: (response) => response.data,
+      select: (response) => response.data?.pet || response.pet,
     }
   );
 

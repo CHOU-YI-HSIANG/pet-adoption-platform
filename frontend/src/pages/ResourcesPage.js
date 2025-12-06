@@ -154,7 +154,7 @@ const ResourcesPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">寵物資源整合</h1>
           <p className="text-lg text-gray-600">為您整理完整的寵物醫療、友善場所與贊助資訊</p>
@@ -186,31 +186,23 @@ const ResourcesPage = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600" />
             </div>
             <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600">
+              className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 appearance-none bg-white"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}>
               {cities.map(city => (<option key={city} value={city}>{city === 'all' ? '所有縣市' : city}</option>))}
             </select>
           </div>
         </div>
 
         {/* 內容區域 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {activeTab === 'medical' && filterData(medicalResources).map((resource) => (
-            <div key={resource.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+            <div key={resource.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col">
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{resource.name}</h3>
               <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mb-3">{resource.type}</span>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 flex-grow">
                 <div className="flex items-center text-sm text-gray-600"><MapPin className="w-4 h-4 mr-2" />{resource.address}</div>
                 <div className="flex items-center text-sm text-gray-600"><Phone className="w-4 h-4 mr-2" />{resource.phone && resource.phone.trim() ? resource.phone : '—'}</div>
                 <div className="flex items-center text-sm text-gray-600"><Info className="w-4 h-4 mr-2" />開放時間：{resource.openHours && resource.openHours.trim() ? resource.openHours : '—'}</div>
-                <div className="flex items-center mt-2">
-                  {getMapLink(resource.address) ? (
-                    <a href={getMapLink(resource.address)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-                      快速導航
-                    </a>
-                  ) : (
-                    <div className="text-sm text-gray-500">—</div>
-                  )}
-                </div>
               </div>
               {resource.discount && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
@@ -225,14 +217,23 @@ const ResourcesPage = () => {
                   ))}
                 </div>
               </div>
+              <div className="mt-auto">
+                {getMapLink(resource.address) ? (
+                  <a href={getMapLink(resource.address)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all">
+                    快速導航
+                  </a>
+                ) : (
+                  <div className="text-center text-sm text-gray-500">—</div>
+                )}
+              </div>
             </div>
           ))}
 
           {activeTab === 'places' && filterData(friendlyPlaces).map((place) => (
-            <div key={place.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+            <div key={place.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col">
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{place.name}</h3>
               <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm mb-3">{place.type}</span>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 flex-grow">
                 <div className="flex items-center text-sm text-gray-600"><MapPin className="w-4 h-4 mr-2" />{place.address}</div>
                 <div className="flex items-center text-sm text-gray-600"><Phone className="w-4 h-4 mr-2" />{place.phone && place.phone.trim() ? place.phone : '—'}</div>
                 <div className="flex items-center text-sm text-gray-600"><Info className="w-4 h-4 mr-2" />開放時間：{place.openHours}</div>
@@ -244,15 +245,6 @@ const ResourcesPage = () => {
                     '—'
                   )}
                 </div>
-                <div className="flex items-center mt-2">
-                  {getMapLink(place.address) ? (
-                    <a href={getMapLink(place.address)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-                      快速導航
-                    </a>
-                  ) : (
-                    <div className="text-sm text-gray-500">—</div>
-                  )}
-                </div>
               </div>
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">特色設施：</p>
@@ -262,15 +254,24 @@ const ResourcesPage = () => {
                   ))}
                 </div>
               </div>
+              <div className="mt-auto">
+                {getMapLink(place.address) ? (
+                  <a href={getMapLink(place.address)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all">
+                    快速導航
+                  </a>
+                ) : (
+                  <div className="text-center text-sm text-gray-500">—</div>
+                )}
+              </div>
             </div>
           ))}
 
           {activeTab === 'sponsors' && filterData(sponsorOrganizations).map((org) => (
-            <div key={org.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+            <div key={org.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col">
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{org.name}</h3>
               <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm mb-3">{org.type}</span>
               <p className="text-gray-600 text-sm mb-4">{org.description}</p>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 flex-grow">
                 <div className="flex items-center text-sm text-gray-600"><MapPin className="w-4 h-4 mr-2" />{org.address && org.address.trim() ? org.address : '—'}</div>
                 <div className="flex items-center text-sm text-gray-600"><Phone className="w-4 h-4 mr-2" />{org.phone && org.phone.trim() ? org.phone : '—'}</div>
                 <div className="flex items-center text-sm text-gray-600"><Info className="w-4 h-4 mr-2" />營業時間：{org.openHours && org.openHours.trim() ? org.openHours : '—'}</div>
@@ -282,15 +283,6 @@ const ResourcesPage = () => {
                     '—'
                   )}
                 </div>
-                <div className="flex items-center mt-2">
-                  {getMapLink(org.address) ? (
-                    <a href={getMapLink(org.address)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-                      快速導航
-                    </a>
-                  ) : (
-                    <div className="text-sm text-gray-500">—</div>
-                  )}
-                </div>
               </div>
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">執行項目：</p>
@@ -300,20 +292,22 @@ const ResourcesPage = () => {
                   )) : <span className="text-xs text-gray-500">—</span>}
                 </div>
               </div>
-              { (org.website && org.website.trim()) ? (
-                <a href={org.website} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 rounded-lg font-semibold transition-all mb-2">
-                  我要贊助
-                </a>
-              ) : (
-                <div className="text-center text-sm text-gray-500 mb-2">—</div>
-              )}
-              {org.donationLink && org.donationLink.trim() && (org.donationLink !== org.website) && (
-                <a href={org.donationLink} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full border border-gray-200 text-gray-700 py-2 rounded-lg font-semibold transition-all">
-                  <DollarSign className="w-4 h-4" />另行贊助連結
-                </a>
-              )}
+              <div className="mt-auto space-y-2">
+                { (org.website && org.website.trim()) ? (
+                  <a href={org.website} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 rounded-lg font-semibold transition-all">
+                    我要贊助
+                  </a>
+                ) : (
+                  <div className="text-center text-sm text-gray-500">—</div>
+                )}
+                {org.donationLink && org.donationLink.trim() && (org.donationLink !== org.website) && (
+                  <a href={org.donationLink} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full border border-gray-200 text-gray-700 py-2 rounded-lg font-semibold transition-all">
+                    <DollarSign className="w-4 h-4" />另行贊助連結
+                  </a>
+                )}
+              </div>
             </div>
           ))}
         </div>
